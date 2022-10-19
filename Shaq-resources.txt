@@ -1,0 +1,6 @@
+- SDK: https://dl-cdn.ryzerobotics.com/downloads/Tello/Tello%20SDK%202.0%20User%20Guide.pdf
+- Probably a better way to view the sdk https://djitellopy.readthedocs.io/en/latest/tello/
+- Github code examples: https://github.com/dji-sdk/Tello-Python/tree/master/Tello_Video
+- Good (but long) yt vid to get you started https://www.youtube.com/watch?v=LmEcyQnfpDA&t=2s&ab_channel=Murtaza%27sWorkshop-RoboticsandAI
+
+by the third chapter the vid gets into opencv but i suggest you look at that stuff seperately, i dont have anything to recommend besides what youd already find through google for that
