@@ -1,6 +1,6 @@
-class Packet:  # packet objects to store path data and node status data
+class Packet:
     def __init__(self, data):
-        self.data__ = data
+        self.data = data
 
     # byte sizes for different data types:
     # char - 1
@@ -10,57 +10,74 @@ class Packet:  # packet objects to store path data and node status data
     # long long - 8
     # double - 8 bytes
     # uint64_t - 8 bytes
-    # we will make our packet size 42 bytes, this accommodates note State (42 bytes) and pathpoint (41 bytes)
-
-    def parseData(self):
-        index = 0
-        # get list of all variables for an object
-        variables = [variable for variable in vars(self)
-                     # to exclude a variable from this list, use '__' at the beginning or end of the name
-                     if not variable.startswith('__')
-                     and not variable.endswith('__')]
-        for attr in variables:  # set the value for each variable from the passed in data based on its known size
-            length = len(getattr(self, attr))
-            setattr(self, attr, self.data__[index: index + length])
-            # print('index', index)
-            index = index + length
-            # print(getattr(packet, attr), length)
+    # we will make our packet size 42 bytes, this accomodates note State (42 bytes) and pathpoint (41 bytes)
+    def packetType(self):
+        if self.data[0:1] == b'1':
+            return 1
+        if self.data[0:1] == b'2':
+            return 2
 
 
-class node_state(Packet):  # packet to hold data for the node state
-    def __init__(self, data):
-        self.data__ = data
-        self.packet_size__ = 41
-        # set all node state values to 0 by deafult
-        self.x = b'00000000'
-        self.y = b'00000000'
-        self.velocity = b'00000000'
-        self.heading = b'00000000'
-        self.ts_ms = b'00000000'
-        self.state = b'0'
-        self.parseData()  # automatically parse data when a new object is created
+class node_State(Packet):
+    def __init__(self,data, heading, velocity, X, Y, ts_ms, State, y_right, d_right, y_left, d_left, x_exp, y_exp, velocity_exp, heading_exp):
+        self.data = data
+        self.heading = heading
+        self.velocity = velocity
+        self.X = X
+        self.Y = Y
+        self.ts_ms = ts_ms
+        self.State = State
+        self.y_right = y_right
+        self.d_right = d_right
+        self.y_left = y_left
+        self.d_left = d_left
+        self.x_exp = x_exp
+        self.y_exp = y_exp
+        self.velocity_exp = velocity_exp
+        self.heading_exp = heading_exp
+    def convertData(self):
+        self.heading = self.data[0:8] # heading angle relative to start (double - 8 bytes)
+        self.velocity = self.data[8:16] # current velocity (double - 8 bytes)
+        self.X = self.data[16:24] # Estimated x position relative to start (double - 8 bytes)
+        self.Y = self.data[24:32] # Estimated y position relative to start (double - 8 bytes)
+        self.ts_ms = self.data[32:40] # time stamp in ms since start (uint64_t - 8 bytes)
+        self.State = self.data[40:41] # byte enumeration of node executing state (char - 1 byte)
+        self.y_right = self.data[41:49] # double
+        self.d_right = self.data[49:57] # double
+        self.y_left = self.data[57:65] # double
+        self.d_left = self.data[65:73] # double
+        self.x_exp = self.data[73:81] # double
+        self.y_exp = self.data[81:89] # double
+        self.velocity_exp = self.data[89:97] # double
+        self.heading_exp = self.data[97:105] # double
 
 
-class path_packet(Packet):  # packet to hold data for path planning
+class path_packet(Packet):
+     def __init__(self, data, x, y, ts_ms, v, heading):
+         self.data = data
+         self.x = x
+         self.y = y
+         self.ts_ms = ts_ms
+         self.v = v
+         self.heading = heading
+     def convertData(self):
+         self.x = self.data[0:8]  # x position for path point (double - 8 bytes)
+         self.y = self.data[8:16]  # y position for path point (double - 8 bytes)
+         self.ts_ms = self.data[16:24]  # time stamp in ms of when this point should be hit (uint64_t - 8 bytes)
+         self.v = self.data[24:32]  # velocity at this point (double - 8 bytes)
+         self.heading = self.data[32:40]  # heading at this point (double - 8 bytes)
 
-    def __init__(self, *args):
-        if len(args) == 1:  # V1 of constructor if we only pass in data array
-            self.packet_size__ = 40
-            self.data__ = args[0]
-            # set all data values to 0 for parseData() to function
-            self.x = b'00000000'
-            self.y = b'00000000'
-            self.velocity = b'00000000'
-            self.heading = b'00000000'
-            self.ts_ms = b'00000000'
-            self.parseData()
 
-        if len(args) > 1:  # V2 of constructor for if we want to manually pass in the variable values alongside the data array
-            # order of packet data coming in: data, x, y, velocity, heading, ts_ms
-            self.data__ = args[0]
-            self.packet_size__ = 40
-            self.x = args[1]
-            self.y = args[2]
-            self.velocity = args[3]
-            self.heading = args[4]
-            self.ts_ms = args[5]
+
+#
+# class NodeManager:
+#     def __init__(self, id, ws):
+#         self.id = id
+#         self.ws = ws
+
+
+
+
+
+# one fsm branches between packet codes, sub FSM handles conversation back and forth between
+# draw the FSM before coding

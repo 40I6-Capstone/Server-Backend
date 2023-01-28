@@ -1,23 +1,28 @@
+import Packet
 
-# Node class to create 'node' objects for the server. This allows us to reference the nodes by their conn / address as well as store their current state
 class Node:
-    def __init__(self, conn, address,ID,x,y, velocity, heading, ts_ms, state):
-        self.conn = conn # new socket object usable to send and receive data on the connection
-        self.address = address # the address bound to the socket on the other end of the connection
-        self.ID = ID
-        self.status_size = 1
-        # Below values will store the current state of the node
-        self.x = x
-        self.y = y
-        self.velocity = velocity
+    def __init__(self, conn, address, heading, velocity, X, Y, ts_ms, State, y_right, d_right, y_left, d_left, x_exp, y_exp, velocity_exp, heading_exp):
+        self.conn = conn
+        self.address = address
         self.heading = heading
+        self.velocity = velocity
+        self.X = X
+        self.Y = Y
         self.ts_ms = ts_ms
-        self.state = state
+        self.State = State
+        self.y_right = y_right
+        self.d_right = d_right
+        self.y_left = y_left
+        self.d_left = d_left
+        self.x_exp = x_exp
+        self.y_exp = y_exp
+        self.velocity_exp = velocity_exp
+        self.heading_exp = heading_exp
 
-    def updateState(self, Packet): # method to update the current state to match that of an incoming state packet
+    def updateState(self, Packet):
         self.heading = Packet.heading
         self.velocity = Packet.velocity
-        self.x = Packet.x
-        self.y = Packet.y
+        self.X = Packet.X
+        self.Y = Packet.Y
         self.ts_ms = Packet.ts_ms
-        self.state = Packet.state
+        self.State = Packet.State
