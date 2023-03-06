@@ -1,6 +1,9 @@
 import socket;
 import threading;
 import time;
+import cv2;
+import numpy as np;
+# import nvcodec;
 
 class UAV:
     def __init__(self, local_ip, local_port, tello_ip="192.168.10.1", tello_port=8889):
@@ -21,10 +24,14 @@ class UAV:
         self.listening_thread.daemon = True;
         self.listening_thread.start();
 
+        self.send_command("command");
+        self.send_command("streamon");
+
         # set up connection to receive images from drone
         self.image_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM);
         self.local_video_port = 11111  # port for receiving image stream
         self.image_socket.bind((local_ip, self.local_video_port));
+        # self.image_stream = cv2.VideoCapture(f'udp://@{local_ip}:{self.local_video_port}');
     
     def _listening_thread(self):
         """
@@ -42,7 +49,21 @@ class UAV:
     def send_command(self, command):
         self.socket.sendto(command.encode("utf-8"), self.uav_address);
         print("send command: %s to %s"%(command, self.uav_address));
+    
+    def capture_photo(self):
+        packet_data = b"";
+        while(True):
+            try:
+                res_string, ip = self.image_socket.recvfrom(2048)
+                packet_data += res_string;
+                # end of frame
+                if len(res_string) != 1460:
+                    print(packet_data);
+                    packet_data = b""
+                    break;
 
+            except socket.error as exc:
+                print ("Caught exception socket.error : %s" % exc);
         
 
 
