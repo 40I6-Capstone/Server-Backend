@@ -16,12 +16,17 @@ class NodeManager:
     async def getPacket(self, websocket):
         async for message in websocket:
             #TODO complete stuff to do with the packet
-            break;
+            print(f'got message {message}');
+            #TODO something like this for pushing nodestate into a queue
+            #  self.nodeState = NodeState(...);
+            # await self.stateQueue.put(self.NodeState);
+            continue;
 
     async def sendPacket(self, websocket, queue):
         while True:
             message = await queue.get();
             #TODO complete tasks with what you get from queue
+            print("send message");
             await websocket.send(message);
             queue.task_done();
 
