@@ -1,7 +1,7 @@
 import socket;
 import threading;
 import time;
-import cv2;
+# import cv2;
 import numpy as np;
 # import nvcodec;
 
