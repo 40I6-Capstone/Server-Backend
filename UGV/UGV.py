@@ -1,7 +1,7 @@
 import websockets;
 import asyncio;
 
-from NodeManager import NodeManager
+from UGV.NodeManager import NodeManager
 
 host_ports = [];
 

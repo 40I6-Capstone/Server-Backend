@@ -7,8 +7,8 @@ import _thread
 import socket
 import sys
 import asyncio
-import Packet  # Packet class
-import Node
+import UGV.Packet as Packet  # Packet class
+import UGV.Node as Node
 
 global packet_type
 global state  # make state a global variable so that it can be modified in class methods

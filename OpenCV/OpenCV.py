@@ -11,7 +11,7 @@ debug = False
 
 # Set Pipeline to True to see image pipeline
 global Pipeline
-Pipeline = False
+Pipeline = True
 
 
 cv2.namedWindow('Original Image', cv2.WINDOW_NORMAL)
@@ -75,23 +75,24 @@ def circle_discretize(center_x, center_y, radius, side_len):
         points.append((x, y))
     return points
 
-if debug:
-    cv2.namedWindow("Trackbars", cv2.WINDOW_NORMAL)
+def run_cv(frame: cv2.Mat):
+    if debug:
+        cv2.namedWindow("Trackbars", cv2.WINDOW_NORMAL)
 
-    # create trackbars to edit HSV lower and upper values for the mask
-    # also create trackbars to play with canny upper and lower thresholds
-    cv2.createTrackbar("L - H", "Trackbars", 0, 179, nothing)
-    cv2.createTrackbar("L - S", "Trackbars", 0, 255, nothing)
-    cv2.createTrackbar("L - V", "Trackbars", 0, 255, nothing)
-    cv2.createTrackbar("U - H", "Trackbars", 179, 179, nothing)
-    cv2.createTrackbar("U - S", "Trackbars", 255, 255, nothing)
-    cv2.createTrackbar("U - V", "Trackbars", 255, 255, nothing)
-    cv2.createTrackbar('Canny Lower', 'Trackbars', 0, 255, nothing)
-    cv2.createTrackbar('Canny Upper', 'Trackbars', 0, 255, nothing)
+        # create trackbars to edit HSV lower and upper values for the mask
+        # also create trackbars to play with canny upper and lower thresholds
+        cv2.createTrackbar("L - H", "Trackbars", 0, 179, nothing)
+        cv2.createTrackbar("L - S", "Trackbars", 0, 255, nothing)
+        cv2.createTrackbar("L - V", "Trackbars", 0, 255, nothing)
+        cv2.createTrackbar("U - H", "Trackbars", 179, 179, nothing)
+        cv2.createTrackbar("U - S", "Trackbars", 255, 255, nothing)
+        cv2.createTrackbar("U - V", "Trackbars", 255, 255, nothing)
+        cv2.createTrackbar('Canny Lower', 'Trackbars', 0, 255, nothing)
+        cv2.createTrackbar('Canny Upper', 'Trackbars', 0, 255, nothing)
 
-while True:
+    # while True:
     # _, frame = cap.read()
-    frame = cv2.imread("round.jpg")
+    # frame = 
     frame_high_contrast = apply_brightness_contrast(frame, 0, 20)
     hsv = cv2.cvtColor(frame_high_contrast, cv2.COLOR_BGR2HSV)
 
@@ -215,11 +216,11 @@ while True:
         cv2.imshow("mask_result", result)
         cv2.imshow('Edge', edge)
         #canvas[60:60+mask.shape[0],200:200 + mask.shape[1]] = mask
+    cv2.waitKey(10000)
+    cv2.destroyAllWindows()
+    return circle_coords;
 
-
-    # wait for a key to pressed, if not then close
-    key = cv2.waitKey(1)
-    if key == 27:
-        break
-
-cv2.destroyAllWindows()
+        # # wait for a key to pressed, if not then close
+        # key = cv2.waitKey(1)
+        # if key == 27:
+        #     break

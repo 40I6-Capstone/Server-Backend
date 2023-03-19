@@ -38,7 +38,13 @@ class UAV:
         while True:
             try:
                 self.response, ip = self.socket.recvfrom(3000);
-                #print(self.response)
+                match (self.response.decode()):
+                    case 'ok':
+                        print("got command ok");
+                    case 'error':
+                        print("error sending command");
+                # if(self.response.decode() == 'ok'): print('ok');
+                # print(self.response)
             except socket.error as err:
                 print ("Caught exception UGV receive socket.error : %s" % err);
     
@@ -53,7 +59,12 @@ class UAV:
             gotFrame, frame = cap.read();
         cap.release();
         cv2.imwrite(f'./pictures/tello_photo{time.strftime("%Y%m%d-%H%M%S")}.jpeg', frame);
-        cv2.waitKey(1000);
+        return(frame);
+
+    def close(self):
+        self.send_command("streamoff");
+        self.socket.close();
+
         
 
 

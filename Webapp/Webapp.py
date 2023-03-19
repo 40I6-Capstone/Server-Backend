@@ -20,14 +20,7 @@ class Webapp:
 
     async def _network_handler(self, websocket):
         self.websocket = websocket;
-        message = {
-            'type': 'ugvAdded',
-            'data': {
-                'id': 0,
-                'name': 'UGV 0',
-            }
-        };
-        asyncio.create_task(self.putMessageInQueue(json.dumps(message)));
+        await self.setupTestTask();
 
         consumer_task = asyncio.create_task(self.getPacket(websocket));
         producer_task = asyncio.create_task(self.sendPacket(websocket));
@@ -48,18 +41,27 @@ class Webapp:
     
     async def sendPacket(self, websocket):
         while True:
-            print(".")
             message = await self.send_message_queue.get();
             print("sending message", message);
             await websocket.send(message);
             self.send_message_queue.task_done();
-            print("done sending message");
             print();
     
     async def putMessageInQueue(self, value):
         await self.send_message_queue.put(value);
-        print(f'add {value} to queue');
         await asyncio.sleep(0.5);
+
+    async def setupTestTask(self): 
+        message = {
+            'type': 'ugvAdded',
+            'data': {
+                'id': 0,
+                'name': 'UGV 0',
+            }
+        };
+
+        asyncio.create_task(self.putMessageInQueue(json.dumps(message)));
+        
 
     async def testTask(self): 
         vHeadActFile = open("../UGVDashboard/velocity_heading_actual.csv", "r");

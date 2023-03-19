@@ -1,6 +1,6 @@
-from UAV import UAV;
-from UGV import UGV;
-from Webapp import Webapp;
+from UAV.UAV import UAV;
+from UGV.UGV import UGV;
+from Webapp.Webapp import Webapp;
 import asyncio;
 import json;
 
@@ -16,48 +16,12 @@ NUMBER_OF_UGVS = 1;
 
 async def main():
 
-    # webapp = Webapp('127.0.0.1', WEBAPP_LOCALS_PORT);
-    # asyncio.create_task(webapp.start_network());
-    # while(webapp.websocket == None):
-    #     print(".");
-    #     await asyncio.sleep(1);
-    # print("connected to webapp");
-    # message = {
-    #     'type': 'ugvAdded',
-    #     'data': {
-    #         'id': 0,
-    #         'name': 'UGV 0',
-    #     }
-    # };
-
-    # add_msg = asyncio.create_task(webapp.putMessageInQueue(json.dumps(message)));
-    # await add_msg;
-
-    # ugv = [None] * NUMBER_OF_UGVS;
-
-    # for i in range(NUMBER_OF_UGVS):
-    #     port = UGV_BASE_LOCALS_PORT+i;
-    #     ugv[i] = UGV(LOCAL_IP, port);
-    #     asyncio.create_task(ugv[i].start_network());
-
-    # while(ugv[0].websocket == None):
-    #     print(".");
-    #     await asyncio.sleep(1);
-
-    uav = UAV(UAV_LOCAL_IP, UAV_LOCAL_PORT);
-    uav.capture_photo();
-
-        
-    # add_msg = asyncio.create_task(ugv[0].putMessageInQueue("hello world2"));
-    # await add_msg;
+    webapp = Webapp('127.0.0.1', WEBAPP_LOCALS_PORT);
+    asyncio.create_task(webapp.start_network());
 
     while(1):
-        # a = input("what to send");
+        a = input("what to send");
         await asyncio.sleep(10);
-        uav.capture_photo();
-
-        # add_msg = asyncio.create_task(ugv[0].putMessageInQueue(a));
-        # await add_msg;
 
 asyncio.run(main());
 
