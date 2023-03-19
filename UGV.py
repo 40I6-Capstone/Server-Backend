@@ -33,7 +33,7 @@ class UGV:
         self.nodeManager = NodeManager(websocket, self.id);
 
         consumer_task = asyncio.create_task(self.nodeManager.getPacket(websocket));
-        producer_task = asyncio.create_task(self.nodeManager.sendPacket(websocket, self.send_message_queue));
+        producer_task = asyncio.create_task(self.nodeManager.sendPacket(websocket));
         done, pending = await asyncio.wait(
             [consumer_task, producer_task],
             return_when=asyncio.FIRST_COMPLETED,
@@ -42,7 +42,7 @@ class UGV:
             task.cancel();
     
     async def putMessageInQueue(self, value):
-        await self.send_message_queue.put(value);
+        await self.nodeManager.send_packet_queue.put(value);
         print(f'add {value} to queue');
         await asyncio.sleep(0.5);
 
