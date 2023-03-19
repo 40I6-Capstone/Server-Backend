@@ -1,9 +1,8 @@
 import socket;
 import threading;
 import time;
-# import cv2;
+import cv2;
 import numpy as np;
-# import nvcodec;
 
 class UAV:
     def __init__(self, local_ip, local_port, tello_ip="192.168.10.1", tello_port=8889):
@@ -16,6 +15,8 @@ class UAV:
         """
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM);
         self.uav_address = (tello_ip, tello_port);
+        self.tello_ip = tello_ip;
+        self.image_port = 11111;
         
         # set up socket for sending commands to tello drone
         self.socket.bind((local_ip, local_port));
@@ -27,11 +28,6 @@ class UAV:
         self.send_command("command");
         self.send_command("streamon");
 
-        # set up connection to receive images from drone
-        self.image_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM);
-        self.local_video_port = 11111  # port for receiving image stream
-        self.image_socket.bind((local_ip, self.local_video_port));
-        # self.image_stream = cv2.VideoCapture(f'udp://@{local_ip}:{self.local_video_port}');
     
     def _listening_thread(self):
         """
@@ -51,19 +47,13 @@ class UAV:
         print("send command: %s to %s"%(command, self.uav_address));
     
     def capture_photo(self):
-        packet_data = b"";
-        while(True):
-            try:
-                res_string, ip = self.image_socket.recvfrom(2048)
-                packet_data += res_string;
-                # end of frame
-                if len(res_string) != 1460:
-                    print(packet_data);
-                    packet_data = b""
-                    break;
-
-            except socket.error as exc:
-                print ("Caught exception socket.error : %s" % exc);
+        cap = cv2.VideoCapture(f'udp://@{self.tello_ip}:{self.image_port}');
+        gotFrame = False;
+        while(not gotFrame):
+            gotFrame, frame = cap.read();
+        cap.release();
+        cv2.imwrite(f'./pictures/tello_photo{time.strftime("%Y%m%d-%H%M%S")}.jpeg', frame);
+        cv2.waitKey(1000);
         
 
 
