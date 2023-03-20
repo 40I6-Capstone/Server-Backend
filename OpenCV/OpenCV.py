@@ -11,7 +11,7 @@ debug = False
 
 # Set Pipeline to True to see image pipeline
 global Pipeline
-Pipeline = True
+Pipeline = False
 
 class Shape:
     def __init__(self, vertices, contour):
@@ -91,7 +91,7 @@ def nothing(x):
 # takes four arguments: the x and y coordinates of the center of the circle, the radius of the circle, and the side length. The function uses the math module to calculate the x and y coordinates of each vertex of the polygon,
 # and appends these coordinates to a list called points. The function then returns this list of points.
 # effectively, this returns the center point for each oil boom in a list.
-#TODO - How will we ensure the UGV places the boom at the appropriate angle?
+# TODO - How will we ensure the UGV places the boom at the appropriate angle?
 def circle_discretize(center_x, center_y, radius, side_len):
     num_sides = math.ceil(math.pi / (math.atan(side_len / (2 * radius))))  # formula derived on onenote
     points = []
@@ -103,6 +103,24 @@ def circle_discretize(center_x, center_y, radius, side_len):
         y = center_y + radius * math.sin(base_angle + angle)
         points.append((x, y))
     return points
+
+
+def pixel_to_cm(distance, int_coords):
+    i = 0
+    # Use pixel mapping measurements to convert pixels to cm
+    px = 2592
+    py = 1936
+    thetaX = 1.219185  # obtained from pixel mapping measurements
+    thetaY = 0.96353  # obtained from pixel mapping measurements
+    ximage = math.tan(thetaX / 2) * distance * 2
+    yimage = math.tan(thetaY / 2) * distance * 2
+    rx = px / ximage  # pixels per cm
+    ry = py / yimage  # pixels per cm
+    # cm_circle_coords = int_circle_coords *
+    for i in int_coords:
+        int_coords[i][0] / rx  # x pixels / pixels per cm to get x cm
+        int_coords[i][1] / ry  # y pixels / pixels per cm to get y cm
+
 
 def run_cv(frame: cv2.Mat):
     if debug:
@@ -213,13 +231,17 @@ def run_cv(frame: cv2.Mat):
         # Convert the coordinates to integers so that they can actually be displayed on the image
         int_circle_coords = list(np.rint(np.array(circle_coords)).astype(int))
 
+        # Convert Integer coordinates to pixels
+        #pixel_to_cm(distance, int_circle_coords) # TODO - get distance from drone here
+
+
         origin = [round(x + w / 2), round(y + h / 2)]
         unit_normal = []
         # Draw all the points on the image &
         # Calculate a vector between all the points and the origin of the bounding circle and normalize them
         for i in range(len(int_circle_coords)):
             cv2.circle(img_copy, (int_circle_coords[i][0], int_circle_coords[i][1]), radius=15, color=pink, thickness=-1)
-            point = (int_circle_coords[i][0], int_circle_coords[i][1]) # each midpoint on the discretized circle
+            point = (int_circle_coords[i][0], int_circle_coords[i][1])  # each midpoint on the discretized circle
             vector = np.subtract(origin, point)  # To find the directional vector, subtract the coordinates of the initial point from the coordinates of the terminal point.
             unit_normal.append(vector / np.linalg.norm(vector))
 
@@ -235,7 +257,7 @@ def run_cv(frame: cv2.Mat):
     cv2.imshow("Original Image", frame)
     cv2.imshow("Contour", img_copy)
     if Pipeline:
-        frame_high_contrast = cv2.resize(frame_high_contrast,(350,350), interpolation = cv2.INTER_AREA)
+        frame_high_contrast = cv2.resize(frame_high_contrast, (350, 350), interpolation=cv2.INTER_AREA)
         mask = cv2.resize(mask, (350, 350), interpolation=cv2.INTER_AREA)
         result = cv2.resize(result, (350, 350), interpolation=cv2.INTER_AREA)
         edge = cv2.resize(edge, (350, 350), interpolation=cv2.INTER_AREA)
@@ -244,12 +266,12 @@ def run_cv(frame: cv2.Mat):
         cv2.imshow("mask", mask)
         cv2.imshow("mask_result", result)
         cv2.imshow('Edge', edge)
-        #canvas[60:60+mask.shape[0],200:200 + mask.shape[1]] = mask
+        # canvas[60:60+mask.shape[0],200:200 + mask.shape[1]] = mask
     cv2.waitKey(10000)
     cv2.destroyAllWindows()
     return Shape(circle_coords,c);
 
-        # # wait for a key to pressed, if not then close
-        # key = cv2.waitKey(1)
-        # if key == 27:
-        #     break
+    # # wait for a key to pressed, if not then close
+    # key = cv2.waitKey(1)
+    # if key == 27:
+    #     break
