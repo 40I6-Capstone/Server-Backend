@@ -3,16 +3,16 @@ import websockets;
 import json
 
 class Webapp:
-    def __init__(self, local_ip, local_port):
+    def __init__(self, local_ip, local_port, mainQueue: asyncio.Queue):
         """
         Binds to the local IP/port to the webapp.
         :param host_ip (str): Local IP address to bind.
         :param host_base_port (int): Local port to bind.
         """
-        print(f'Port {local_port}');
         self.local_address = {"local_ip": local_ip, "local_port": local_port };        
         self.send_message_queue = asyncio.Queue();
         self.websocket = None;
+        self.mainQueue = mainQueue;
     
     async def start_network(self):
         async with websockets.serve(self._network_handler, self.local_address["local_ip"], self.local_address["local_port"]):
@@ -33,10 +33,14 @@ class Webapp:
     
     async def getPacket(self, websocket):
         async for message in websocket:
-            print(f'!!!!!!\nGot message!! {message}\n');
             data = json.loads(message);
-            if(data["type"] == "start"):
-                asyncio.create_task(self.testTask());
+            data = {
+                "source": "webapp",
+                "data": data
+            }
+            await self.mainQueue.put(data);
+            # if(data["type"] == "start"):
+            #     asyncio.create_task(self.testTask());
 
     
     async def sendPacket(self, websocket):
