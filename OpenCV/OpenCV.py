@@ -107,6 +107,7 @@ def circle_discretize(center_x, center_y, radius, side_len):
 
 def pixel_to_cm(distance, int_coords):
     i = 0
+    cm_coords = int_coords.copy()
     # Use pixel mapping measurements to convert pixels to cm
     px = 2592
     py = 1936
@@ -116,10 +117,11 @@ def pixel_to_cm(distance, int_coords):
     yimage = math.tan(thetaY / 2) * distance * 2
     rx = px / ximage  # pixels per cm
     ry = py / yimage  # pixels per cm
-    # cm_circle_coords = int_circle_coords *
     for i in int_coords:
-        int_coords[i][0] / rx  # x pixels / pixels per cm to get x cm
-        int_coords[i][1] / ry  # y pixels / pixels per cm to get y cm
+        cm_coords[i][0] / rx  # x pixels / pixels per cm to get x cm
+        cm_coords[i][1] / ry  # y pixels / pixels per cm to get y cm
+
+    return cm_coords
 
 
 def run_cv(frame: cv2.Mat):
