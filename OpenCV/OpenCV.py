@@ -15,7 +15,8 @@ Pipeline = True
 
 class Shape:
     def __init__(self, vertices, contour):
-        coeff = 15*100
+        #TODO Change to actual pixel mapping
+        coeff = 15
         self.contour = contour/coeff;
         vertices = [[y / coeff for y in x] for x in vertices];
         midpoints = [];
@@ -94,10 +95,12 @@ def nothing(x):
 def circle_discretize(center_x, center_y, radius, side_len):
     num_sides = math.ceil(math.pi / (math.atan(side_len / (2 * radius))))  # formula derived on onenote
     points = []
+    base_angle = math.pi + math.atan(center_y/center_x);
+
     for i in range(num_sides):
         angle = 2 * math.pi * i / num_sides
-        x = center_x + radius * math.cos(angle)
-        y = center_y + radius * math.sin(angle)
+        x = center_x + radius * math.cos(base_angle + angle)
+        y = center_y + radius * math.sin(base_angle + angle)
         points.append((x, y))
     return points
 
