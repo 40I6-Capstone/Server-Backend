@@ -10,7 +10,8 @@ class NodeManager:
         "path": '2',
         "stop": '3',
         "go": '4',
-        "diag_state": '5'
+        "diag_state": '5',
+        "esp_status": '6',
         # str.encode(packet_type["node"]) = b'1'
         # str.encode(packet_type["path"]) = b'2'
     }
@@ -26,7 +27,7 @@ class NodeManager:
     # create get message function
     async def getPacket(self, websocket):
         async for message in websocket:
-            # TODO receive and determine what type of packet has been received between debug and node state then parse the packet
+            # TODO receive and determine what type of packet has been received between debug and node state then parse the packet and put it in queue for the server
             packet = Packet(message)
             if message['code'] == 5:  # Diagnostic packet
                 diag_packet = Packet.diagnostic_state(message)
