@@ -13,6 +13,32 @@ debug = False
 global Pipeline
 Pipeline = True
 
+class Shape:
+    def __init__(self, vertices, contour):
+        coeff = 15*100
+        self.contour = contour/coeff;
+        vertices = [[y / coeff for y in x] for x in vertices];
+        midpoints = [];
+        norms = [];
+
+        for i in range(len(vertices)):
+            next = (i+1)%len(vertices);
+            x_diff = (vertices[i][0]-vertices[next][0]);
+            y_diff = (vertices[i][1]-vertices[next][1]);
+            x = (x_diff/2) + vertices[next][0];
+            y = (y_diff/2) + vertices[next][1];
+            midpoints.append([x,y]);
+            
+            x_norm = -y_diff/math.sqrt(math.pow(x_diff,2)+math.pow(y_diff,2));
+            y_norm = x_diff/math.sqrt(math.pow(x_diff,2)+math.pow(y_diff,2));
+            norms.append([x_norm, y_norm]);
+
+        self.vertices = np.array(vertices);
+        self.centre = np.mean(self.vertices,axis=0);
+        self.vertices = np.vstack([self.vertices, self.vertices[0]])
+
+        self.midpoints = np.array(midpoints);
+        self.norms = np.array(norms);
 
 cv2.namedWindow('Original Image', cv2.WINDOW_NORMAL)
 cv2.namedWindow('Contour', cv2.WINDOW_NORMAL)
@@ -218,7 +244,7 @@ def run_cv(frame: cv2.Mat):
         #canvas[60:60+mask.shape[0],200:200 + mask.shape[1]] = mask
     cv2.waitKey(10000)
     cv2.destroyAllWindows()
-    return circle_coords;
+    return Shape(circle_coords,c);
 
         # # wait for a key to pressed, if not then close
         # key = cv2.waitKey(1)
