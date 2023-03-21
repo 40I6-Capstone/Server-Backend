@@ -16,9 +16,11 @@ Pipeline = False
 class Shape:
     def __init__(self, vertices, contour):
         #TODO Change to actual pixel mapping
-        coeff = 15
-        self.contour = contour/coeff;
-        vertices = [[y / coeff for y in x] for x in vertices];
+        # coeff = 15
+        # self.contour = contour/coeff;
+        # vertices = [[y / coeff for y in x] for x in vertices];
+        vertices = pixel_to_cm(100, vertices);
+        self.contour = np.array(pixel_to_cm(100, [x[0] for x in contour]));
         midpoints = [];
         norms = [];
 
@@ -117,10 +119,8 @@ def pixel_to_cm(distance, int_coords):
     yimage = math.tan(thetaY / 2) * distance * 2
     rx = px / ximage  # pixels per cm
     ry = py / yimage  # pixels per cm
-    for i in int_coords:
-        cm_coords[i][0] / rx  # x pixels / pixels per cm to get x cm
-        cm_coords[i][1] / ry  # y pixels / pixels per cm to get y cm
-
+    for  i, coord in enumerate(cm_coords):
+        cm_coords[i] = [coord[0] / rx, coord[1] / ry ] # x and y pixels / pixels per cm to get x and y cm
     return cm_coords
 
 
