@@ -19,8 +19,9 @@ class Packet:
 
 
 class node_state(Packet):
-    def __init__(self, data, x, y, velocity, heading, ts_ms, State, x_exp, y_exp, velocity_exp, heading_exp):
+    def __init__(self, data, code, x, y, velocity, heading, ts_ms, State, x_exp, y_exp, velocity_exp, heading_exp):
         self.data = data
+        self.code = code
         self.x = x
         self.y = y
         self.velocity = velocity
@@ -31,52 +32,60 @@ class node_state(Packet):
         self.y_exp = y_exp
         self.velocity_exp = velocity_exp
         self.heading_exp = heading_exp
+        self.convertData()
 
     def convertData(self):
-        self.x = self.data[0:8]  # Estimated x position relative to start (double - 8 bytes)
-        self.y = self.data[8:16] # Estimated y position relative to start (double - 8 bytes)
-        self.velocity = self.data[16:24] # current velocity (double - 8 bytes)
-        self.heading = self.data[24:32]  # heading angle relative to start (double - 8 bytes)
-        self.ts_ms = self.data[32:40]  # time stamp in ms since start (uint64_t - 8 bytes)
-        self.State = self.data[40:41]  # byte enumeration of node executing state (char - 1 byte)
-        self.x_exp = self.data[41:49]  # double
-        self.y_exp = self.data[49:57]  # double
-        self.velocity_exp = self.data[57:65]  # double
-        self.heading_exp = self.data[65:73]  # double
+        self.code = self.data[0] # packet code
+        self.x = self.data[1:9]  # Estimated x position relative to start (double - 8 bytes)
+        self.y = self.data[9:17] # Estimated y position relative to start (double - 8 bytes)
+        self.velocity = self.data[17:25] # current velocity (double - 8 bytes)
+        self.heading = self.data[25:33]  # heading angle relative to start (double - 8 bytes)
+        self.ts_ms = self.data[33:41]  # time stamp in ms since start (uint64_t - 8 bytes)
+        self.State = self.data[41:42]  # byte enumeration of node executing state (char - 1 byte)
+        self.x_exp = self.data[42:50]  # double
+        self.y_exp = self.data[50:58]  # double
+        self.velocity_exp = self.data[58:66]  # double
+        self.heading_exp = self.data[66:74]  # double
 
 
 class diagnostic_state(Packet):
-    def __init__(self, data, ts_ms, y_right, d_right, y_left, d_left):
+    def __init__(self, data, code, ts_ms, y_right, d_right, y_left, d_left):
         self.data = data
+        self.code = code
         self.ts_ms = ts_ms
         self.y_right = y_right
         self.d_right = d_right
         self.y_left = y_left
         self.d_left = d_left
+        self.convertData()
 
     def convertData(self):
-        self.ts_ms = self.data[0:8]  # time stamp in ms since start (uint64_t - 8 bytes)
-        self.y_right = self.data[8:16]  # double
-        self.d_right = self.data[16:24]  # double
-        self.y_left = self.data[24:32]  # double
-        self.d_left = self.data[32:40]  # double
+        self.code = self.data[0]  # packet code
+        self.ts_ms = self.data[1:9]  # time stamp in ms since start (uint64_t - 8 bytes)
+        self.y_right = self.data[9:17]  # double
+        self.d_right = self.data[17:25]  # double
+        self.y_left = self.data[25:33]  # double
+        self.d_left = self.data[33:41]  # double
 
 
 class path_packet(Packet):
-    def __init__(self, data, x, y, ts_ms, v, heading):
+    def __init__(self, data, code, x, y, ts_ms, v, heading):
         self.data = data
+        self.code = code
         self.x = x
         self.y = y
         self.ts_ms = ts_ms
         self.v = v
         self.heading = heading
+        self.convertData()
 
     def convertData(self):
-        self.x = self.data[0:8]  # x position for path point (double - 8 bytes)
-        self.y = self.data[8:16]  # y position for path point (double - 8 bytes)
-        self.ts_ms = self.data[16:24]  # time stamp in ms of when this point should be hit (uint64_t - 8 bytes)
-        self.v = self.data[24:32]  # velocity at this point (double - 8 bytes)
-        self.heading = self.data[32:40]  # heading at this point (double - 8 bytes)
+        self.code = self.data[0]  # packet code
+        self.x = self.data[1:9]  # x position for path point (double - 8 bytes)
+        self.y = self.data[9:17]  # y position for path point (double - 8 bytes)
+        self.ts_ms = self.data[17:25]  # time stamp in ms of when this point should be hit (uint64_t - 8 bytes)
+        self.v = self.data[25:33]  # velocity at this point (double - 8 bytes)
+        self.heading = self.data[33:41]  # heading at this point (double - 8 bytes)
 
 #
 # class NodeManager:
