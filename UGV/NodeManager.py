@@ -19,9 +19,7 @@ class NodeManager:
     def __init__(self, websocket, nodeID):  # take in socket and nodeID as arguments
         self.nodeID = nodeID
         self.websocket = websocket
-        self.node_state_queue = asyncio.Queue()
         self.send_packet_queue = asyncio.Queue()
-        self.diag_packet_queue = asyncio.Queue()
         self.send_path_semaphore = asyncio.Semaphore()
 
     # create get message function
@@ -32,12 +30,12 @@ class NodeManager:
             if packet.data[0] == 5:  # Diagnostic packet
                 diag_packet = Packet.diagnostic_state(message)
                 diag_packet.convertData()
-                add_msg = asyncio.create_task(self.diag_packet_queue.putMessageInQueue(diag_packet))
+                add_msg = asyncio.create_task(self.send_packet_queue.putMessageInQueue(diag_packet))
                 await add_msg;
             elif packet.data[0] == 1:  # Node state packet
                 node_state_packet = Packet.node_state(message)
                 node_state_packet.convertData()
-                add_msg = asyncio.create_task(self.node_state_queue.putMessageInQueue(node_state_packet))
+                add_msg = asyncio.create_task(self.send_packet_queue.putMessageInQueue(node_state_packet))
                 await add_msg;
             elif packet.data[0] == '6':  # ESP status packet
                 if message['data'] == 'ready':

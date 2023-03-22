@@ -46,5 +46,11 @@ class UGV:
         print(f'add {value} to queue');
         await asyncio.sleep(0.5);
 
+    async def stop(self):
+        await self.nodeManager.send_packet_queue.put(3)
+
+    async def go(self):
+        await self.nodeManager.send_packet_queue.put(4)
+
 
 
