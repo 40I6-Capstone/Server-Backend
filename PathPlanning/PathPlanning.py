@@ -25,18 +25,18 @@ class PathPlanning:
         d_angle = 2*math.asin((1.05*(ugv_rad/2))/crit_rad);
 
         # keep values within a certain angle
-        if(d_angle * num_of_paths > math.pi/6):
-            d_angle = math.pi / (3*num_of_paths);
+        if(d_angle * num_of_paths > math.pi/2):
+            d_angle = math.pi / (2*num_of_paths);
             self.crit_rad = 1.05*(ugv_rad/2)/math.sin(d_angle/2);
             print(f'New Crit Radius {self.crit_rad}');
 
         
         # number of points for 1st part of the path (in the crit circle)
-        nop_1 = 100;
+        nop_1 = 3;
         d_rad = self.crit_rad/nop_1;
 
         # number of points for the 3rd part of the path (the spoke length)
-        nop_3 = 50;
+        nop_3 = 3;
         d_len_3 = spoke_len/50;
 
 
@@ -134,7 +134,7 @@ class PathPlanning:
             return np.array([ctl_rad_ext, ctl_spoke_ext]);
 
     def _b_spline(self, cv):
-        n=1000;
+        n=50;
         cv = np.asarray(cv);
         count = cv.shape[0];
         degree = 2;
