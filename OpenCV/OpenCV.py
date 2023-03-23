@@ -19,8 +19,8 @@ class Shape:
         # coeff = 15
         # self.contour = contour/coeff;
         # vertices = [[y / coeff for y in x] for x in vertices];
-        vertices = pixel_to_cm(100, vertices);
-        self.contour = np.array(pixel_to_cm(100, [x[0] for x in contour]));
+        # vertices = pixel_to_cm(100, vertices);
+        self.contour = contour;
         midpoints = [];
         norms = [];
 
@@ -107,9 +107,7 @@ def circle_discretize(center_x, center_y, radius, side_len):
     return points
 
 
-def pixel_to_cm(distance, int_coords):
-    i = 0
-    cm_coords = int_coords.copy()
+def pixel_to_cm_ratio(distance):
     # Use pixel mapping measurements to convert pixels to cm
     px = 2592
     py = 1936
@@ -119,9 +117,7 @@ def pixel_to_cm(distance, int_coords):
     yimage = math.tan(thetaY / 2) * distance * 2
     rx = px / ximage  # pixels per cm
     ry = py / yimage  # pixels per cm
-    for  i, coord in enumerate(cm_coords):
-        cm_coords[i] = [coord[0] / rx, coord[1] / ry ] # x and y pixels / pixels per cm to get x and y cm
-    return cm_coords
+    return (rx+ry)/2;
 
 
 def run_cv(frame: cv2.Mat):
@@ -145,6 +141,8 @@ def run_cv(frame: cv2.Mat):
     frame_high_contrast = apply_brightness_contrast(frame, 0, 20)
     hsv = cv2.cvtColor(frame_high_contrast, cv2.COLOR_BGR2HSV)
 
+    #TODO set actual height value
+    r = pixel_to_cm_ratio(100);
     # min = [0,0,0]
     # max = [180,255,255]
 
@@ -212,7 +210,7 @@ def run_cv(frame: cv2.Mat):
 
         # add a buffer to the bounding box
         largest_side = max(w, h)
-        buffer = 1.1
+        buffer = 1.20
         largest_side = largest_side * buffer
 
         # Draw a circle around the spill based on the buffer bounding box. We must round to get a whole number of pixels otherwise drawing the circle will not work
@@ -224,7 +222,7 @@ def run_cv(frame: cv2.Mat):
 
         # calculate the midpoints of each boom when placed in the discretized circle
         # TODO - modify side length in this function once we know the true length of the booms we will be using
-        circle_coords = circle_discretize(center_x=round(x + w / 2), center_y=round(y + h / 2), radius=radius, side_len=200)
+        circle_coords = circle_discretize(center_x=round(x + w / 2), center_y=round(y + h / 2), radius=radius, side_len=12*r)
         # circle_coords = get_all_circle_coords(x_center=round(x + w / 2),
         #                                       y_center=round(y + h / 2),
         #                                       radius=radius,
@@ -271,7 +269,9 @@ def run_cv(frame: cv2.Mat):
         # canvas[60:60+mask.shape[0],200:200 + mask.shape[1]] = mask
     cv2.waitKey(10000)
     cv2.destroyAllWindows()
-    return Shape(circle_coords,c);
+    circle_coords_cm = np.array(circle_coords) / r;
+    c_cm = np.array([x[0] for x in c]) / r;
+    return Shape(circle_coords_cm,c_cm);
 
     # # wait for a key to pressed, if not then close
     # key = cv2.waitKey(1)
