@@ -33,11 +33,11 @@ class PathPlanning:
         
         # number of points for 1st part of the path (in the crit circle)
         nop_1 = 3;
-        d_rad = self.crit_rad/nop_1;
+        d_rad = self.crit_rad/(nop_1-1);
 
         # number of points for the 3rd part of the path (the spoke length)
         nop_3 = 3;
-        d_len_3 = spoke_len/50;
+        d_len_3 = spoke_len/(nop_3-1);
 
 
         for i in range(num_of_paths):
