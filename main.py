@@ -3,6 +3,7 @@ from UGV.UGV import UGV;
 from Webapp.Webapp import Webapp;
 from OpenCV.OpenCV import run_cv;
 from PathPlanning.PathPlanning import PathPlanning;
+from PathPlanning.PathScheduler import PathScheduler;
 import asyncio;
 import cv2;
 import json;
@@ -24,12 +25,21 @@ NUMBER_OF_UGVS = 1;
 async def main():
     mainQueue = asyncio.Queue();
 
+
     webapp = Webapp('127.0.0.1', WEBAPP_LOCALS_PORT, mainQueue);
     asyncio.create_task(webapp.start_network());
+    
+    uav = UAV(UAV_LOCAL_IP, UAV_LOCAL_PORT);
+    ugvs = [];
+
+    for i in range(NUMBER_OF_UGVS):
+        ugvs.append(UGV(LOCAL_IP, UGV_BASE_LOCALS_PORT + i));
+        asyncio.create_task(ugvs[i].start_network());
 
 
 
 
+    pathPlan = None;
 
     while(1):
         message = await mainQueue.get();
@@ -38,10 +48,14 @@ async def main():
                 match(message["data"]["type"]):
                     case 'scout':
                         print("Scouting");
+                        # img = uav.capture_photo();
                         img = cv2.imread("./OpenCV/Images/round.jpg");
                         shape = run_cv(img);
                         pathPlan = PathPlanning();
                         pathPlan.planPath(shape, 20, 3, 5);
+                        pathScheduler = PathScheduler(NUMBER_OF_UGVS, pathPlan.paths);
+                        for ugvIndex,ugv in enumerate(ugvs):
+                            ugv.setPaths(pathScheduler.assignedPathIndexes[ugvIndex])
                         paths = [];
                         for path in pathPlan.paths:
                             paths.append(path.points.tolist());
@@ -55,6 +69,26 @@ async def main():
                             }
                         };
                         await webapp.putMessageInQueue(json.dumps(message));
+                        break;
+                    case 'ugvStart':
+                        ugv[message["data"]["index"]].sendNewPath();
+                        break;
+                break;
+            case 'ugv':
+                match(message["data"]["type"]):
+                    case 'connected':
+                        message = {
+                            'type': 'ugvAdded',
+                            'data': {
+                                'id': message["data"]["id"],
+                                'name': f'UGV {message["data"]["id"]}',
+                            }
+                        }; 
+                        await webapp.putMessageInQueue(json.dumps(message));
+                        break;
+                break;
 
+
+cv2.destroyAllWindows();
 asyncio.run(main());
 

@@ -46,10 +46,9 @@ class Webapp:
     async def sendPacket(self, websocket):
         while True:
             message = await self.send_message_queue.get();
-            print("sending message", message);
+            # print("sending message", message);
             await websocket.send(message);
             self.send_message_queue.task_done();
-            print();
     
     async def putMessageInQueue(self, value):
         await self.send_message_queue.put(value);
@@ -64,7 +63,7 @@ class Webapp:
             }
         };
 
-        asyncio.create_task(self.putMessageInQueue(json.dumps(message)));
+        await self.putMessageInQueue(json.dumps(message));
         
 
     async def testTask(self): 
