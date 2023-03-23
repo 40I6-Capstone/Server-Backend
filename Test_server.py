@@ -3,14 +3,14 @@ import websockets
 import asyncio
 # import warnings
 import struct
-import Packet
-import Node
+import UGV.Packet as packet
+import UGV.Node as node
 import time
 
 PORT = 1234
 #url = "192.168.244.243"
 # url = "localhost"
-url = "192.168.244.243"
+url = "192.168.0.104"
 
 # # Example path packet data
 # x = b'15.10100'
@@ -27,8 +27,10 @@ v = '2.300000'
 heading = '19.12345'
 ts_ms = '10506789'
 
+test = '5'
+
 path = x + y + ts_ms + v + heading
-path2 = '2' + x + y +  v + heading + ts_ms
+path2 = '5' + x + y
 
 async def start_network():
     async with websockets.serve(handler, url, PORT):
@@ -40,12 +42,15 @@ async def start_network():
 # create handler for each connection
 async def handler(websocket):
     while(1):
-        data = await websocket.recv()
-        print(data)
-        # reply = f"Data recieved as:  {data}!"
         await websocket.send(path2.encode())
+        data = await websocket.recv()
+        print(data.decode())
+        await asyncio.sleep(3)
+        # reply = f"Data recieved as:  {data}!"
+
         # await websocket.send(path2)
-        await asyncio.sleep(5)
+        # await websocket.send(test.encode())
+        # await asyncio.sleep(5)
 
 
 

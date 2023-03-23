@@ -86,18 +86,13 @@ class path_packet(Packet):
         self.code = None
         self.x = None
         self.y = None
-        self.ts_ms = None
-        self.v = None
-        self.heading = None
         self.convertData()
 
     def convertData(self):
         self.code = self.data[0]  # packet code
         self.x = self.data[1:9]  # x position for path point (double - 8 bytes)
         self.y = self.data[9:17]  # y position for path point (double - 8 bytes)
-        self.ts_ms = self.data[17:25]  # time stamp in ms of when this point should be hit (uint64_t - 8 bytes)
-        self.v = self.data[25:33]  # velocity at this point (double - 8 bytes)
-        self.heading = self.data[33:41]  # heading at this point (double - 8 bytes)
+
 
 #
 # class NodeManager:

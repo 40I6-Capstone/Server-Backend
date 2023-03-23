@@ -23,7 +23,6 @@ class NodeManager:
         self.send_path_semaphore = asyncio.Semaphore()
         self.diag_state = None;
         self.state = None;
-    
 
     # create get message function
     async def getPacket(self, websocket, updateStateSem: asyncio.Semaphore, updateDiagStateSem: asyncio.Semaphore):
@@ -55,6 +54,7 @@ class NodeManager:
                         continue
                     if message['data'] == 'nope':  # when esp sends nope, we assume is already ready to receive path packet again
                         continue
+
 
     async def sendPacket(self, websocket):
         while True:
