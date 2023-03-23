@@ -63,7 +63,7 @@ class Webapp:
             }
         };
 
-        await self.putMessageInQueue(json.dumps(message));
+        # await self.putMessageInQueue(json.dumps(message));
         
 
     async def testTask(self): 

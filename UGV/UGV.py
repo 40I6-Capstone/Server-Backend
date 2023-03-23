@@ -18,7 +18,7 @@ class UGV:
         self.updateStateSem = asyncio.Semaphore();
         self.updateDiagStateSem = asyncio.Semaphore();
         self.websocket = None;
-        self.paths = [];
+        self.pathIndexes = [];
         self.stateHistory = [];
         self.diagStateHistory = [];
         self.mainQueue = mainQueue;
@@ -30,33 +30,38 @@ class UGV:
 
     async def _network_handler(self, websocket):
         if(self.websocket != None):
+            # websocket.close();
             print ("SOMETHING IS ALREADY CONNECTED");
             return;
         self.id = len(host_ports);
         host_ports.append((self.id, self.local_address["local_port"]));
+        print("UGV", self.id);
         await self.mainQueue.put({
             "source": "ugv",
             "data": {
-                "type": "ugvAdded",
+                "type": "connected",
                 "id": self.id,
             }
         });
+
         self.websocket = websocket;
         self.nodeManager = NodeManager(websocket, self.id);
 
         getPacket_task = asyncio.create_task(self.nodeManager.getPacket(websocket, self.updateStateSem, self.updateDiagStateSem));
         sendPacket_task = asyncio.create_task(self.nodeManager.sendPacket(websocket));
-        updateState_task = asyncio.create_task(self.updateState());
-        updateDiagState_task = asyncio.create_task(self.updateDiagState());
+        # updateState_task = asyncio.create_task(self.updateState());
+        # updateDiagState_task = asyncio.create_task(self.updateDiagState());
         done, pending = await asyncio.wait(
-            [getPacket_task, sendPacket_task, updateState_task, updateDiagState_task],
+            [getPacket_task, sendPacket_task],
             return_when=asyncio.FIRST_COMPLETED,
         );
         for task in pending:
             task.cancel();
     
     async def updateState(self):
+        await self.updateStateSem.acquire();
         while(1):
+            print(self.updateStateSem._value);
             await self.updateStateSem.acquire();
             self.stateHistory.append(self.nodeManager.state);
             message = {
@@ -70,6 +75,7 @@ class UGV:
             await self.mainQueue.put(message);
     
     async def updateDiagState(self):
+        await self.updateDiagStateSem.acquire();
         while(1):
             await self.updateDiagStateSem.acquire();
             self.diagStateHistory.append(self.nodeManager.diag_state);
@@ -83,27 +89,31 @@ class UGV:
             };
             await self.mainQueue.put(message);
 
-    def setPaths(self, paths):
-        self.paths = paths;
+    def setPaths(self, pathsIndexes):
+        self.pathIndexes = pathsIndexes;
         
-    async def sendNewPath(self):
-        path = self.paths.pop(0).points;
-        message = {
-            "code": 2,
-            "data": np.array2string(path),
-        };
-        await self.nodeManager.send_packet_queue(message);
+    async def sendNewPath(self, paths):
+        pathPoints = paths[self.pathIndexes.pop(0)].points;
+        for point in pathPoints: 
+            await self.nodeManager.send_packet_queue.put(f'2{point[0]}{point[1]}');
+            
     
     async def putMessageInQueue(self, value):
         await self.nodeManager.send_packet_queue.put(value);
-        print(f'add {value} to queue');
-        await asyncio.sleep(0.5);
+        await asyncio.sleep(0.1);
+    
+    async def getState(self): 
+        await asyncio.sleep(15);
+        while (1):
+            if (len(self.pathIndexes) == 0): continue;
+            await self.nodeManager.send_packet_queue.put("1");
+            await asyncio.sleep(1);
 
     async def stop(self):
-        await self.nodeManager.send_packet_queue.put(3)
+        await self.nodeManager.send_packet_queue.put("3")
 
     async def go(self):
-        await self.nodeManager.send_packet_queue.put(4)
+        await self.nodeManager.send_packet_queue.put("4")
 
 
 

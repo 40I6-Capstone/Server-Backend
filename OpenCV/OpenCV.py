@@ -20,7 +20,7 @@ class Shape:
         # self.contour = contour/coeff;
         # vertices = [[y / coeff for y in x] for x in vertices];
         # vertices = pixel_to_cm(100, vertices);
-        self.contour = contour;
+        self.contour = np.array(contour);
         midpoints = [];
         norms = [];
 
@@ -43,8 +43,8 @@ class Shape:
         self.midpoints = np.array(midpoints);
         self.norms = np.array(norms);
 
-cv2.namedWindow('Original Image', cv2.WINDOW_NORMAL)
-cv2.namedWindow('Contour', cv2.WINDOW_NORMAL)
+# cv2.namedWindow('Original Image', cv2.WINDOW_NORMAL)
+# cv2.namedWindow('Contour', cv2.WINDOW_NORMAL)
 
 if Pipeline:
     cv2.namedWindow('mask', cv2.WINDOW_NORMAL)
@@ -219,6 +219,7 @@ def run_cv(frame: cv2.Mat):
         color = orange
         thickness = 15
         cv2.circle(img_copy, center, radius, color, thickness)
+        print(radius);
 
         # calculate the midpoints of each boom when placed in the discretized circle
         # TODO - modify side length in this function once we know the true length of the booms we will be using

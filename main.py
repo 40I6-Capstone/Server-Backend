@@ -16,7 +16,7 @@ UGV_BASE_LOCALS_PORT = 63734;
 
 WEBAPP_LOCALS_PORT = 63733;
 
-NUMBER_OF_UGVS = 2;
+NUMBER_OF_UGVS = 1;
 
 
 
@@ -29,11 +29,11 @@ async def main():
     webapp = Webapp('127.0.0.1', WEBAPP_LOCALS_PORT, mainQueue);
     asyncio.create_task(webapp.start_network());
     
-    uav = UAV(UAV_LOCAL_IP, UAV_LOCAL_PORT);
+    # uav = UAV(UAV_LOCAL_IP, UAV_LOCAL_PORT);
     ugvs = [];
 
     for i in range(NUMBER_OF_UGVS):
-        ugvs.append(UGV(LOCAL_IP, UGV_BASE_LOCALS_PORT + i));
+        ugvs.append(UGV(LOCAL_IP, UGV_BASE_LOCALS_PORT + i, mainQueue));
         asyncio.create_task(ugvs[i].start_network());
 
 
@@ -65,15 +65,14 @@ async def main():
                                 "paths": paths,
                                 "vertices": shape.vertices.tolist(),
                                 "midpoints": shape.midpoints.tolist(),
-                                "contour": shape.contour.tolist(),
+                                "contour": [],#shape.contour.tolist(),
                             }
                         };
                         await webapp.putMessageInQueue(json.dumps(message));
-                        break;
+                        await ugvs[0].sendNewPath(pathPlan.paths);
+                        asyncio.create_task(ugvs[0].getState());
                     case 'ugvLoad':
-                        await ugv[message["data"]["data"]].sendNewPath();
-                        break;
-                break;
+                        await ugvs[message["data"]["data"]].sendNewPath(pathPlan.paths);
             case 'ugv':
                 match(message["data"]["type"]):
                     case 'connected':
@@ -85,7 +84,6 @@ async def main():
                             }
                         }; 
                         await webapp.putMessageInQueue(json.dumps(message));
-                        break;
                     case 'state':
                         message = {
                             'type': 'ugvState',
@@ -102,7 +100,6 @@ async def main():
                                 'data': message["data"]["data"],
                             }
                         }
-                break;
 
 
 cv2.destroyAllWindows();

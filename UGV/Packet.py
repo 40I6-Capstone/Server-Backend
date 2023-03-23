@@ -19,19 +19,19 @@ class Packet:
 
 
 class node_state(Packet):
-    def __init__(self, data, code, x, y, velocity, heading, ts_ms, State, x_exp, y_exp, velocity_exp, heading_exp):
+    def __init__(self, data):
         self.data = data
-        self.code = code
-        self.x = x
-        self.y = y
-        self.velocity = velocity
-        self.heading = heading
-        self.ts_ms = ts_ms
-        self.State = State
-        self.x_exp = x_exp
-        self.y_exp = y_exp
-        self.velocity_exp = velocity_exp
-        self.heading_exp = heading_exp
+        self.code = None
+        self.x = None
+        self.y = None
+        self.velocity = None
+        self.heading = None
+        self.ts_ms = None
+        self.State = None
+        self.x_exp = None
+        self.y_exp = None
+        self.velocity_exp = None
+        self.heading_exp = None
         self.convertData()
 
     def convertData(self):
@@ -55,14 +55,14 @@ class node_state(Packet):
 
 
 class diagnostic_state(Packet):
-    def __init__(self, data, code, ts_ms, y_right, d_right, y_left, d_left):
+    def __init__(self, data):
         self.data = data
-        self.code = code
-        self.ts_ms = ts_ms
-        self.y_right = y_right
-        self.d_right = d_right
-        self.y_left = y_left
-        self.d_left = d_left
+        self.code = None
+        self.ts_ms = None
+        self.y_right = None
+        self.d_right = None
+        self.y_left = None
+        self.d_left = None
         self.convertData()
 
     def convertData(self):
@@ -81,14 +81,14 @@ class diagnostic_state(Packet):
 
 
 class path_packet(Packet):
-    def __init__(self, data, code, x, y, ts_ms, v, heading):
+    def __init__(self, data):
         self.data = data
-        self.code = code
-        self.x = x
-        self.y = y
-        self.ts_ms = ts_ms
-        self.v = v
-        self.heading = heading
+        self.code = None
+        self.x = None
+        self.y = None
+        self.ts_ms = None
+        self.v = None
+        self.heading = None
         self.convertData()
 
     def convertData(self):
