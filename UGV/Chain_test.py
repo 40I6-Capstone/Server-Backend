@@ -9,19 +9,19 @@ rx_pin = machine.Pin(1)  # GP1
 uart = machine.UART(0, baudrate=115200, tx=tx_pin, rx=rx_pin)
 
 class node_state():
-    def __init__(self, data, code, x, y, velocity, heading, ts_ms, State, x_exp, y_exp, velocity_exp, heading_exp):
+    def __init__(self, data):
         self.data = data
-        self.code = code
-        self.x = x
-        self.y = y
-        self.velocity = velocity
-        self.heading = heading
-        self.ts_ms = ts_ms
-        self.State = State
-        self.x_exp = x_exp
-        self.y_exp = y_exp
-        self.velocity_exp = velocity_exp
-        self.heading_exp = heading_exp
+        self.code = None
+        self.x = None
+        self.y = None
+        self.velocity = None
+        self.heading = None
+        self.ts_ms = None
+        self.State = None
+        self.x_exp = None
+        self.y_exp = None
+        self.velocity_exp = None
+        self.heading_exp = None
         self.convertData()
 
     def convertData(self):
@@ -38,11 +38,11 @@ class node_state():
         self.heading_exp = self.data[66:74]  # double
 
 class path_packet():
-    def __init__(self, data, code, x, y):
+    def __init__(self, data):
         self.data = data
-        self.code = code
-        self.x = x
-        self.y = y
+        self.code = None
+        self.x = None
+        self.y = None
         self.convertData()
 
     def convertData(self):
@@ -71,11 +71,16 @@ while(1):
     # Read the response from the ESP8266 module
     response = uart.read()
     print(response)
+    response = response.decode('utf-8')
+    print("response 2:   " + response)
     
     if(response[0] == '1'): # send node state
+        #print('got in 1!')
         data = code + state_history.pop(0).data + combined
         state = node_state(data)
-        uart.write(state)
+        print(state.data)
+        uart.write(state.data)
     elif(response[0] == '2'): # Receive path packet
+        #print('got in 2!')
         path = path_packet(response)
         state_history.append(path)
