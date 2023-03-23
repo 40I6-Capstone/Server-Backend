@@ -46,6 +46,12 @@ class node_state(Packet):
         self.y_exp = self.data[50:58]  # double
         self.velocity_exp = self.data[58:66]  # double
         self.heading_exp = self.data[66:74]  # double
+    
+    def convertToDict(self):
+        dict = vars(self);
+        del dict["data"];
+        del dict["code"];
+        return dict;
 
 
 class diagnostic_state(Packet):
@@ -66,6 +72,12 @@ class diagnostic_state(Packet):
         self.d_right = self.data[17:25]  # double
         self.y_left = self.data[25:33]  # double
         self.d_left = self.data[33:41]  # double
+    
+    def convertToDict(self):
+        dict = vars(self);
+        del dict["data"];
+        del dict["code"];
+        return dict;
 
 
 class path_packet(Packet):

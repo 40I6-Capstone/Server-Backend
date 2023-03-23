@@ -16,7 +16,7 @@ UGV_BASE_LOCALS_PORT = 63734;
 
 WEBAPP_LOCALS_PORT = 63733;
 
-NUMBER_OF_UGVS = 1;
+NUMBER_OF_UGVS = 2;
 
 
 
@@ -70,8 +70,8 @@ async def main():
                         };
                         await webapp.putMessageInQueue(json.dumps(message));
                         break;
-                    case 'ugvStart':
-                        ugv[message["data"]["index"]].sendNewPath();
+                    case 'ugvLoad':
+                        await ugv[message["data"]["data"]].sendNewPath();
                         break;
                 break;
             case 'ugv':
@@ -86,6 +86,22 @@ async def main():
                         }; 
                         await webapp.putMessageInQueue(json.dumps(message));
                         break;
+                    case 'state':
+                        message = {
+                            'type': 'ugvState',
+                            'data': {
+                                'id': message["data"]["id"],
+                                'data': message["data"]["data"],
+                            }
+                        }
+                    case 'diagState':
+                        message = {
+                            'type': 'ugvDiagState',
+                            'data': {
+                                'id': message["data"]["id"],
+                                'data': message["data"]["data"],
+                            }
+                        }
                 break;
 
 

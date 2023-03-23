@@ -15,9 +15,12 @@ class UGV:
         """
         print(f'Port {local_port}');
         self.local_address = {"local_ip": local_ip, "local_port": local_port };        
-        self.send_message_queue = asyncio.Queue();
+        self.updateStateSem = asyncio.Semaphore();
+        self.updateDiagStateSem = asyncio.Semaphore();
         self.websocket = None;
         self.paths = [];
+        self.stateHistory = [];
+        self.diagStateHistory = [];
         self.mainQueue = mainQueue;
 
 
@@ -41,24 +44,55 @@ class UGV:
         self.websocket = websocket;
         self.nodeManager = NodeManager(websocket, self.id);
 
-        consumer_task = asyncio.create_task(self.nodeManager.getPacket(websocket));
-        producer_task = asyncio.create_task(self.nodeManager.sendPacket(websocket));
+        getPacket_task = asyncio.create_task(self.nodeManager.getPacket(websocket, self.updateStateSem, self.updateDiagStateSem));
+        sendPacket_task = asyncio.create_task(self.nodeManager.sendPacket(websocket));
+        updateState_task = asyncio.create_task(self.updateState());
+        updateDiagState_task = asyncio.create_task(self.updateDiagState());
         done, pending = await asyncio.wait(
-            [consumer_task, producer_task],
+            [getPacket_task, sendPacket_task, updateState_task, updateDiagState_task],
             return_when=asyncio.FIRST_COMPLETED,
         );
         for task in pending:
             task.cancel();
     
+    async def updateState(self):
+        while(1):
+            await self.updateStateSem.acquire();
+            self.stateHistory.append(self.nodeManager.state);
+            message = {
+                "source": "ugv",
+                "data": {
+                    "type": "state",
+                    "id": self.id,
+                    "data": self.nodeManager.state.convertToDict(),
+                }
+            };
+            await self.mainQueue.put(message);
+    
+    async def updateDiagState(self):
+        while(1):
+            await self.updateDiagStateSem.acquire();
+            self.diagStateHistory.append(self.nodeManager.diag_state);
+            message = {
+                "source": "ugv",
+                "data": {
+                    "type": "diagState",
+                    "id": self.id,
+                    "data": self.nodeManager.diag_state.convertToDict(),
+                }
+            };
+            await self.mainQueue.put(message);
+
     def setPaths(self, paths):
         self.paths = paths;
+        
     async def sendNewPath(self):
         path = self.paths.pop(0).points;
         message = {
             "code": 2,
             "data": np.array2string(path),
         };
-        self.send_message_queue(message);
+        await self.nodeManager.send_packet_queue(message);
     
     async def putMessageInQueue(self, value):
         await self.nodeManager.send_packet_queue.put(value);
