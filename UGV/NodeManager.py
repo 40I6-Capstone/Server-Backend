@@ -23,7 +23,6 @@ class NodeManager:
         self.send_path_semaphore = asyncio.Semaphore()
         self.diag_state = None;
         self.state = None;
-    
 
     # create get message function
     async def getPacket(self, websocket, updateStateSem: asyncio.Semaphore, updateDiagStateSem: asyncio.Semaphore):
@@ -31,17 +30,15 @@ class NodeManager:
             # TODO receive and determine what type of packet has been received between debug and node state then parse the packet and put it in queue for the server
             packet = Packet(message)
             if packet.data[0] == 5:  # Diagnostic packet
-                diag_packet = Packet.diagnostic_state(message)
-                diag_packet.convertData()
-                self.diag_state = diag_packet;
-                updateDiagStateSem.release();
+                diag_packet = Packet.diagnostic_state(message)  # convert data is done when the packet is initialized
+                self.diag_state = diag_packet
+                updateDiagStateSem.release() # allows updateDiagState in UGV to append diag state to history
                 # add_msg = asyncio.create_task(self.send_packet_queue.putMessageInQueue(diag_packet))
                 # await add_msg;
             elif packet.data[0] == 1:  # Node state packet
-                node_state_packet = Packet.node_state(message)
-                node_state_packet.convertData()
-                self.state = node_state_packet;
-                updateStateSem.release();
+                node_state_packet = Packet.node_state(message)  # convert data is done when the packet is initialized
+                self.state = node_state_packet
+                updateStateSem.release() # Allows updateState in UGV to append state to history
                 # add_msg = asyncio.create_task(self.send_packet_queue.putMessageInQueue(node_state_packet))
                 # await add_msg;
             elif packet.data[0] == '6':  # ESP status packet
