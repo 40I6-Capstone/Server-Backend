@@ -1,5 +1,6 @@
 from UAV.UAV import UAV;
 from UGV.UGV import UGV;
+from UGV.Packet import State;
 from Webapp.Webapp import Webapp;
 from OpenCV.OpenCV import run_cv;
 from PathPlanning.PathPlanning import PathPlanning;
@@ -18,10 +19,6 @@ WEBAPP_LOCALS_PORT = 63733;
 
 NUMBER_OF_UGVS = 1;
 
-
-
-
-
 async def main():
     mainQueue = asyncio.Queue();
 
@@ -29,12 +26,12 @@ async def main():
     webapp = Webapp('127.0.0.1', WEBAPP_LOCALS_PORT, mainQueue);
     asyncio.create_task(webapp.start_network());
     
-    # uav = UAV(UAV_LOCAL_IP, UAV_LOCAL_PORT);
+    uav = UAV(UAV_LOCAL_IP, UAV_LOCAL_PORT);
     ugvs = [];
 
-    for i in range(NUMBER_OF_UGVS):
-        ugvs.append(UGV(LOCAL_IP, UGV_BASE_LOCALS_PORT + i, mainQueue));
-        asyncio.create_task(ugvs[i].start_network());
+    # for i in range(NUMBER_OF_UGVS):
+    #     ugvs.append(UGV(LOCAL_IP, UGV_BASE_LOCALS_PORT + i, mainQueue));
+    #     asyncio.create_task(ugvs[i].start_network());
 
 
 
@@ -48,9 +45,9 @@ async def main():
                 match(message["data"]["type"]):
                     case 'scout':
                         print("Scouting");
-                        # img = uav.capture_photo();
-                        img = cv2.imread("./OpenCV/Images/round.jpg");
-                        shape = run_cv(img);
+                        img = uav.capture_photo();
+                        # img = cv2.imread("./OpenCV/Images/round.jpg");
+                        shape = run_cv(img, uav.state.h);
                         pathPlan = PathPlanning();
                         pathPlan.planPath(shape, 20, 3, 5);
                         pathScheduler = PathScheduler(NUMBER_OF_UGVS, pathPlan.paths);
@@ -69,8 +66,6 @@ async def main():
                             }
                         };
                         await webapp.putMessageInQueue(json.dumps(message));
-                        await ugvs[0].sendNewPath(pathPlan.paths);
-                        asyncio.create_task(ugvs[0].getState());
                     case 'ugvLoad':
                         await ugvs[message["data"]["data"]].sendNewPath(pathPlan.paths);
             case 'ugv':
@@ -81,8 +76,10 @@ async def main():
                             'data': {
                                 'id': message["data"]["id"],
                                 'name': f'UGV {message["data"]["id"]}',
+                                'state': State(0).name,
                             }
                         }; 
+                        print(message);
                         await webapp.putMessageInQueue(json.dumps(message));
                     case 'state':
                         message = {
@@ -91,7 +88,8 @@ async def main():
                                 'id': message["data"]["id"],
                                 'data': message["data"]["data"],
                             }
-                        }
+                        };
+                        await webapp.putMessageInQueue(json.dumps(message));
                     case 'diagState':
                         message = {
                             'type': 'ugvDiagState',
@@ -100,6 +98,8 @@ async def main():
                                 'data': message["data"]["data"],
                             }
                         }
+                        await webapp.putMessageInQueue(json.dumps(message));
+
 
 
 cv2.destroyAllWindows();

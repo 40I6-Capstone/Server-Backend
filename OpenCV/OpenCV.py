@@ -120,7 +120,7 @@ def pixel_to_cm_ratio(distance):
     return (rx+ry)/2;
 
 
-def run_cv(frame: cv2.Mat):
+def run_cv(frame: cv2.Mat, height):
     if debug:
         cv2.namedWindow("Trackbars", cv2.WINDOW_NORMAL)
 
@@ -142,7 +142,7 @@ def run_cv(frame: cv2.Mat):
     hsv = cv2.cvtColor(frame_high_contrast, cv2.COLOR_BGR2HSV)
 
     #TODO set actual height value
-    r = pixel_to_cm_ratio(100);
+    r = pixel_to_cm_ratio(height);
     # min = [0,0,0]
     # max = [180,255,255]
 
