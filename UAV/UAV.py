@@ -187,7 +187,7 @@ class UAV:
     #     print("send command: %s to %s"%(command, self.uav_address));
 
     def capture_photo(self):
-        cap = cv2.capture(f'udp://@{self.uav_ip}:{self.image_port}');
+        cap = cv2.VideoCapture(f'udp://@{self.uav_ip}:{self.image_port}');
         gotFrame = False;
         while(not gotFrame):
             gotFrame, frame = cap.read();

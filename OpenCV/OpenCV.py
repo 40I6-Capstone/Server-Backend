@@ -219,7 +219,7 @@ def run_cv(frame: cv2.Mat, height):
         color = orange
         thickness = 15
         cv2.circle(img_copy, center, radius, color, thickness)
-        print(radius);
+        print(f'radius: {radius/r}');
 
         # calculate the midpoints of each boom when placed in the discretized circle
         # TODO - modify side length in this function once we know the true length of the booms we will be using
@@ -253,7 +253,6 @@ def run_cv(frame: cv2.Mat, height):
 
     # draw the contours on a copy of the original image
     cv2.drawContours(img_copy, contours, -1, (0, 255, 0), 3)
-
     # Display
     cv2.imshow("Original Image", frame)
     cv2.imshow("Contour", img_copy)
@@ -271,7 +270,7 @@ def run_cv(frame: cv2.Mat, height):
     cv2.waitKey(10000)
     cv2.destroyAllWindows()
     circle_coords_cm = np.array(circle_coords) / r;
-    c_cm = np.array([x[0] for x in c]) / r;
+    c_cm = np.array([x[0]/r for x in c]);
     return Shape(circle_coords_cm,c_cm);
 
     # # wait for a key to pressed, if not then close
