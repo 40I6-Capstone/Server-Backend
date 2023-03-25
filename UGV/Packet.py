@@ -1,3 +1,11 @@
+from enum import Enum
+
+class State (Enum):
+    NODE_IDLE = 0;
+    NODE_PATH_LEAVE = 1;
+    NODE_PATH_RETURN = 2;
+    NODE_DONE = 3;
+
 class Packet:
     def __init__(self, data):
         self.data = data
