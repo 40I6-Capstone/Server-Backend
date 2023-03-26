@@ -22,11 +22,12 @@ NUMBER_OF_UGVS = 1;
 async def main():
     mainQueue = asyncio.Queue();
 
-
     webapp = Webapp('127.0.0.1', WEBAPP_LOCALS_PORT, mainQueue);
     asyncio.create_task(webapp.start_network());
     
     uav = UAV(UAV_LOCAL_IP, UAV_LOCAL_PORT);
+    asyncio.create_task(uav.connect());
+
     ugvs = [];
 
     # for i in range(NUMBER_OF_UGVS):
@@ -45,9 +46,17 @@ async def main():
                 match(message["data"]["type"]):
                     case 'scout':
                         print("Scouting");
+                        # await uav.send('takeoff');
+                        # await uav.send('up 70');
+                        # print(f'height: {uav.state_listener.state.h}')
                         img = uav.capture_photo();
+                        # height = uav.state_listener.state.h
+                        # print(height);
+                        # await uav.send('land');
+                        height = 150;
+                        shape = run_cv(img, height);
                         # img = cv2.imread("./OpenCV/Images/round.jpg");
-                        shape = run_cv(img, uav.state.h);
+                        # shape = run_cv(img, 100);
                         pathPlan = PathPlanning();
                         pathPlan.planPath(shape, 20, 3, 5);
                         pathScheduler = PathScheduler(NUMBER_OF_UGVS, pathPlan.paths);

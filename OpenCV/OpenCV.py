@@ -111,13 +111,13 @@ def pixel_to_cm_ratio(distance):
     # Use pixel mapping measurements to convert pixels to cm
     px = 2592
     py = 1936
-    thetaX = 1.219185  # obtained from pixel mapping measurements
-    thetaY = 0.96353  # obtained from pixel mapping measurements
+    thetaX = 0.990279  # obtained from pixel mapping measurements
+    thetaY = 0.76965  # obtained from pixel mapping measurements
     ximage = math.tan(thetaX / 2) * distance * 2
     yimage = math.tan(thetaY / 2) * distance * 2
     rx = px / ximage  # pixels per cm
     ry = py / yimage  # pixels per cm
-    return (rx+ry)/(2*3);
+    return (rx+ry)/(2);
 
 
 def run_cv(frame: cv2.Mat, height):

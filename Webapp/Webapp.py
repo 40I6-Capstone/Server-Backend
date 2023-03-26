@@ -56,14 +56,14 @@ class Webapp:
 
     async def setupTestTask(self): 
         message = {
-            'type': 'ugvAdded',
+            'source': 'ugv',
             'data': {
+                'type': 'connected',
                 'id': 0,
-                'name': 'UGV 0',
             }
         };
 
-        # await self.putMessageInQueue(json.dumps(message));
+        await self.mainQueue.put(message);
         
 
     async def testTask(self): 
