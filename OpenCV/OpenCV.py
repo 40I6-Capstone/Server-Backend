@@ -117,7 +117,7 @@ def pixel_to_cm_ratio(distance):
     yimage = math.tan(thetaY / 2) * distance * 2
     rx = px / ximage  # pixels per cm
     ry = py / yimage  # pixels per cm
-    return (rx+ry)/2;
+    return (rx+ry)/(2*3);
 
 
 def run_cv(frame: cv2.Mat, height):
@@ -210,6 +210,7 @@ def run_cv(frame: cv2.Mat, height):
 
         # add a buffer to the bounding box
         largest_side = max(w, h)
+        print(f'largest side: {largest_side/r}');
         buffer = 1.20
         largest_side = largest_side * buffer
 

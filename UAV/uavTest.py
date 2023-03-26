@@ -11,11 +11,19 @@ async def main():
     print("creating connection");
     # asyncio.create_task(uav.start_network());
     await uav.connect();
-    await uav.send('takeoff')
-    image = uav.capture_photo();
-    await uav.send('land');
-    cv2.imshow('Tello', image)
-    cv2.waitKey(1000);
+    for i in range(78, 81):
+        input(f'{i}cm click any key to continue');
+        image = uav.capture_photo();
+        print('done');
+        cv2.imwrite(f'../OpenCV/Images/pixleMap{i}cm.jpeg', image);
+        # print(f'bat {uav.state_listener.state.bat}')
+        await uav.send('command');
+    
+    # await uav.send('takeoff')
+    # image = uav.capture_photo();
+    # await uav.send('land');
+    # cv2.imshow('Tello', image)
+    # cv2.waitKey(1000);
 
     # for i in range(10):
     #     print(uav.state_listener.state.h);

@@ -1,4 +1,4 @@
-from UAV.UAVState import UAVStateListener
+from UAVState import UAVStateListener
 import socket;
 import threading;
 import time;
@@ -192,7 +192,6 @@ class UAV:
         while(not gotFrame):
             gotFrame, frame = cap.read();
         cap.release();
-        cv2.imwrite(f'./pictures/tello_photo{time.strftime("%Y%m%d-%H%M%S")}.jpeg', frame);
         return(frame);
 
     # def close(self):
