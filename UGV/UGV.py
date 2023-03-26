@@ -1,13 +1,19 @@
 import websockets;
 import asyncio;
 import numpy as np;
+import math;
 
 from UGV.NodeManager import NodeManager
 from UGV.Packet import State
 
 host_ports = [];
+ugvInCritRad = None;
+
 
 class UGV:
+    crit_rad = 0;
+    inCritRad = True;
+
     def __init__(self, local_ip, local_port, mainQueue: asyncio.Queue):
         """
         Binds to the local IP/port to the UGV.
@@ -81,7 +87,29 @@ class UGV:
                 }
             };
             await self.mainQueue.put(message);
-    
+            # if ugv is in crit rad
+            if(not self.inCritRad):     
+                if(math.sqrt(self.nodeManager.state.x*self.nodeManager.state.x +  self.nodeManager.state.y*self.nodeManager.state.y) < self.crit_rad):
+                    self.inCritRad = True;
+                    message = {
+                        "source": "ugv",
+                        "data": {
+                            "type": "enterCritRad",
+                            "id": self.id,
+                        }
+                    }
+                    await self.mainQueue.put(message);
+            else:
+                if(math.sqrt(self.nodeManager.state.x*self.nodeManager.state.x +  self.nodeManager.state.y*self.nodeManager.state.y) > self.crit_rad):
+                    self.inCritRad = False;
+                    message = {
+                        "source": "ugv",
+                        "data": {
+                            "type": "leaveCritRad",
+                            "id": self.id,
+                        }
+                    }
+                    await self.mainQueue.put(message);
     async def updateDiagState(self):
         await self.updateDiagStateSem.acquire();
         while(1):
@@ -97,6 +125,9 @@ class UGV:
             };
             await self.mainQueue.put(message);
 
+    def setCritRad(self, crit_rad):
+        self.crit_rad = crit_rad;
+    
     def setPaths(self, pathsIndexes):
         self.pathIndexes = pathsIndexes;
         
@@ -122,6 +153,3 @@ class UGV:
 
     async def go(self):
         await self.nodeManager.send_packet_queue.put("4")
-
-
-

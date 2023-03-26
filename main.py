@@ -30,6 +30,9 @@ async def main():
 
     ugvs = [];
 
+    ugvInCritRad = None;
+    ugvStopQueue = [];
+
     # for i in range(NUMBER_OF_UGVS):
     #     ugvs.append(UGV(LOCAL_IP, UGV_BASE_LOCALS_PORT + i, mainQueue));
     #     asyncio.create_task(ugvs[i].start_network());
@@ -61,6 +64,7 @@ async def main():
                         pathPlan.planPath(shape, 20, 3, 5);
                         pathScheduler = PathScheduler(NUMBER_OF_UGVS, pathPlan.paths);
                         for ugvIndex,ugv in enumerate(ugvs):
+                            ugv.setCritRad(pathPlan.crit_rad);
                             ugv.setPaths(pathScheduler.assignedPathIndexes[ugvIndex])
                         paths = [];
                         for path in pathPlan.paths:
@@ -108,6 +112,27 @@ async def main():
                             }
                         }
                         await webapp.putMessageInQueue(json.dumps(message));
+                    case 'enterCritRad':
+                        if(ugvInCritRad == None):
+                            ugvInCritRad = message["data"]["id"];
+                        else:
+                            ugvStopQueue.append(message["data"]["id"]);
+                            for ugv in ugvs:
+                                if(ugv.id == message["data"]["id"]):
+                                    ugv.stop();
+                                    break;
+                    case 'leaveCritRad':
+                        if(len(ugvStopQueue) == 0):
+                            ugvInCritRad = None;
+                        else:
+                            ugvId = ugvStopQueue.pop(0);
+                            ugvInCritRad = ugvId;
+                            for ugv in ugvs:
+                                if(ugv.id == ugvId):
+                                    ugv.go();
+                                    break;
+
+
 
 
 
