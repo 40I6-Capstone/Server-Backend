@@ -26,6 +26,7 @@ class UAV:
         '''
         def connection_made(self, transport):
             self.pending = []
+            self.transport = transport;
 
         def datagram_received(self, data, addr):
             try:
@@ -33,12 +34,12 @@ class UAV:
             except UnicodeDecodeError as e:
                 raise UAV.Error(f'DECODE ERROR {e} (data: {data})')
                 
-            print('RECEIVED', message)
             try:
                 sent_message, response = self.pending.pop(0)
-   
                 if message == 'ok':
                     result = None
+                elif int(message):
+                    result = message
                 else:
                     response.set_exception(UAV.Error(message))
                     return
@@ -54,13 +55,9 @@ class UAV:
 
         def connection_lost(self, error):
             # print('CONNECTION LOST', error)
-            for m, response, rp in self.pending:
-                response.cancel()
-                self.pending.clear()
+            self.pending = [];
 
-
-
-    def __init__(self, local_ip, local_port, tello_ip="192.168.10.1", tello_port=8889):
+    def __init__(self, local_ip, local_port, main_queue: asyncio.Queue, tello_ip="192.168.10.1", tello_port=8889):
         """
         Binds to the local IP/port and puts the Tello into command mode.
         :param local_ip (str): Local WLAN IP address to bind.
@@ -74,24 +71,12 @@ class UAV:
         self.uav_ip = tello_ip;
         self.uav_port = tello_port;
         self.connected = False;
+        self.main_queue = main_queue;
 
         self.image_port = 11111;
-        # self.uavSem = uavSem;
         self.loop = asyncio.get_running_loop();
 
         self.sendCommandQueue = asyncio.Queue();
-        
-        # set up socket for sending commands to tello drone
-        # self.socket.bind((local_ip, local_port));
-
-        # start listening for any acks or state updates from the tello drone
-        # self.listening_thread = threading.Thread(target=self._listening_thread);
-        # self.listening_thread.daemon = True;
-        # self.listening_thread.start();
-        # asyncio.create_task(sendCommandQueue);
-
-        # self.send_command("command");
-        # self.send_command("streamon");
 
     async def connect(self):
         transport, protocol = await self.loop.create_datagram_endpoint(
@@ -102,11 +87,20 @@ class UAV:
         self._transport = transport;
         self._protocol = protocol;
         
-        self.state_listener = UAVStateListener(self.local_ip, self.local_port)
+        self.state_listener = UAVStateListener(self.local_ip, self.local_port, self.main_queue)
         await self.state_listener.connect(self.loop);
     
         response = await self.send('command');
         response = await self.send('streamon');
+
+        message = {
+            'source': 'UAV',
+            'data': {
+                'type': 'connected',
+            }
+        };
+        await self.main_queue.put(message);
+        asyncio.create_task(self.checkConnection());
         return response;
 
     async def send(self, message, timeout=DEFAULT_RESPONSE_TIMEOUT):
@@ -120,7 +114,6 @@ class UAV:
         :rtype: str, unless `response_parser` is used.
         '''
         if not self._transport.is_closing():
-            print(f'SEND {message}')
             
             self._transport.sendto(message.encode())
 
@@ -137,54 +130,10 @@ class UAV:
                 error = UAV.Error(f'[{message}] TIMEOUT')
             except UAV.Error as e:
                 error = UAV.Error(f'[{message}] ERROR {e}')
-    
+            print(error);
+            return None;
             # default behaviour
-            await self._abort()
-            raise error
-
-    async def receiveTask(self, reader: asyncio.StreamReader):
-        while (1):
-            data = await reader.read();
-            print(f'Received: {data.decode()!r}')
-    
-    async def sendCommandTask(self, writer: asyncio.StreamWriter):
-        while (1):
-            command  = await self.sendCommandQueue.get();
-            writer.write(command.encode("utf-8"));
-            await writer.drain();
-    
-            
-
-    # def _listening_thread(self):
-    #     """
-    #     Listen to responses from the Tello.
-    #     Runs as a thread, sets self.response to whatever the Tello last returned.
-    #     """
-        
-    #     while True:
-    #         try:
-    #             self.response, ip = self.socket.recvfrom(3000);
-    #             match (self.response.decode()):
-    #                 case 'ok':
-    #                     print("got command ok");
-    #                     self.uavSem.release();
-    #                 case 'error':
-    #                     print("error sending command");
-    #                 case other:
-    #                     # self.state = json.loads(self.response);
-    #                     stateArr = self.response.decode().replace("\\r\\n","").split(';');
-    #                     for data in stateArr:
-    #                         if(not ":" in data): continue;
-    #                         splitData = data.split(":");
-    #                         setattr(self.state, splitData[0], splitData[1]);
-    #             # if(self.response.decode() == 'ok'): print('ok');
-    #             # print(self.response)
-    #         except socket.error as err:
-    #             print ("Caught exception UGV receive socket.error : %s" % err);
-    
-    # def send_command(self, command):
-    #     self.socket.sendto(command.encode("utf-8"), self.uav_address);
-    #     print("send command: %s to %s"%(command, self.uav_address));
+            # raise error
 
     def capture_photo(self):
         cap = cv2.VideoCapture(f'udp://@{self.uav_ip}:{self.image_port}');
@@ -194,7 +143,27 @@ class UAV:
         cap.release();
         return(frame);
 
-    # def close(self):
+    async def checkConnection(self):
+        while(1):
+            result = await self.send('wifi?');
+            if (result == None):
+                if(not self._transport == None):
+                    self._transport.close();
+                    self.state_listener._transport.close();
+                self.connected = False;
+                message = {
+                    'source': 'UAV',
+                    'data': {
+                        'type': 'disconnected',
+                    }
+                };
+                await self.main_queue.put(message);
+                break;
+            await asyncio.sleep(5);
+
+            
+
+    # def close(self): 
     #     self.send_command("streamoff");
     #     self.socket.close();
 

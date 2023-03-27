@@ -1,3 +1,5 @@
+import asyncio;
+
 STATE_FIELDS = ['raw', 'roll', 'pitch', 'yaw', 'height', 'barometer', 'battery', 'time_of_flight', 'motor_time', 'temperature', 'acceleration', 'velocity', 'mission_pad', 'mission_pad_position']
 class UavState:
     def __init__(self, pitch = 0, roll = 0, yaw = 0, vgx = 0.0, vgy = 0.0, vgz = 0.0, templ = 0, temph = 0, tof = 0, h = 0, bat = 0, baro = 0.0, time = 0, agx = 0.0, agy = 0.0, agz = 0.0):
@@ -40,9 +42,11 @@ class UAVStateListener:
             # print('[state] CONNECTION LOST', error)
             pass
 
-    def __init__(self, local_ip, local_port):
+    def __init__(self, local_ip, local_port, main_queue: asyncio.Queue):
         self._local_ip = local_ip
         self._local_port = local_port
+        self.main_queue = main_queue
+        self.count = 0;
 
     async def connect(self, loop):
         transport, protocol = await loop.create_datagram_endpoint(
@@ -59,7 +63,20 @@ class UAVStateListener:
             self.state = UavState();
 
     def updateState(self, state: UavState):
-        self.state = state;
+        if(state == None): return;
+        self.count += 1;
+        if(self.count == 1):
+            self.state = state;
+            message = {
+                'source': 'UAV',
+                'data': {
+                    'type': 'sendBat',
+                    'data': self.state.bat,
+                }
+            };
+            asyncio.get_running_loop().create_task(self.main_queue.put(message));
+        elif(self.count == 100): 
+            self.count = 0
         
 
 
