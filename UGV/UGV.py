@@ -1,5 +1,6 @@
 import websockets;
 import asyncio;
+import struct
 import numpy as np;
 import math;
 
@@ -8,6 +9,7 @@ from UGV.Packet import State
 
 host_ports = [];
 ugvInCritRad = None;
+
 
 
 class UGV:
@@ -21,7 +23,7 @@ class UGV:
         :param host_base_port (int): Local port to bind.
         """
         print(f'Port {local_port}');
-        self.local_address = {"local_ip": local_ip, "local_port": local_port };        
+        self.local_address = {"local_ip": local_ip, "local_port": local_port};
         self.updateStateSem = asyncio.Semaphore();
         self.updateDiagStateSem = asyncio.Semaphore();
         self.websocket = None;
@@ -29,23 +31,21 @@ class UGV:
         self.stateHistory = [];
         self.diagStateHistory = [];
         self.mainQueue = mainQueue;
-    
+
     def getNodeState(self):
         state = self.getStateHistory[-1].convertToDict();
-        if(state["State"] == State.NODE_IDLE and len(self.pathIndexes) == 0):
+        if (state["State"] == State.NODE_IDLE and len(self.pathIndexes) == 0):
             state["State"] = State.NODE_DONE;
         return state;
-    
-
 
     async def start_network(self):
         async with websockets.serve(self._network_handler, self.local_address["local_ip"], self.local_address["local_port"]):
             await asyncio.Future()  # run forever
 
     async def _network_handler(self, websocket):
-        if(self.websocket != None):
+        if (self.websocket != None):
             # websocket.close();
-            print ("SOMETHING IS ALREADY CONNECTED");
+            print("SOMETHING IS ALREADY CONNECTED");
             return;
         self.id = len(host_ports);
         host_ports.append((self.id, self.local_address["local_port"]));
@@ -71,11 +71,10 @@ class UGV:
         );
         for task in pending:
             task.cancel();
-    
+
     async def updateState(self):
         await self.updateStateSem.acquire();
-        while(1):
-            print(self.updateStateSem._value);
+        while (1):
             await self.updateStateSem.acquire();
             self.stateHistory.append(self.nodeManager.state);
             message = {
@@ -110,9 +109,10 @@ class UGV:
                         }
                     }
                     await self.mainQueue.put(message);
+
     async def updateDiagState(self):
         await self.updateDiagStateSem.acquire();
-        while(1):
+        while (1):
             await self.updateDiagStateSem.acquire();
             self.diagStateHistory.append(self.nodeManager.diag_state);
             message = {
@@ -130,26 +130,22 @@ class UGV:
     
     def setPaths(self, pathsIndexes):
         self.pathIndexes = pathsIndexes;
-        
+
     async def sendNewPath(self, paths):
         pathPoints = paths[self.pathIndexes.pop(0)].points;
-        for point in pathPoints: 
-            await self.nodeManager.send_packet_queue.put(f'2{point[0]}{point[1]}');
-            
-    
-    async def putMessageInQueue(self, value):
-        await self.nodeManager.send_packet_queue.put(value);
-        await asyncio.sleep(0.1);
-    
-    async def getState(self): 
+        for point in pathPoints:
+            await self.nodeManager.send_packet_queue.put(struct.pack("bff", b'2', point[0], point[1]));
+            # await self.nodeManager.send_packet_queue.put(f'2{point[0]}{point[1]}');
+
+    async def getState(self):
         await asyncio.sleep(15);
         while (1):
             if (len(self.pathIndexes) == 0): continue;
-            await self.nodeManager.send_packet_queue.put("1");
+            await self.nodeManager.send_packet_queue.put(b'1');
             await asyncio.sleep(1);
 
     async def stop(self):
-        await self.nodeManager.send_packet_queue.put("3")
+        await self.nodeManager.send_packet_queue.put(b'3')
 
     async def go(self):
-        await self.nodeManager.send_packet_queue.put("4")
+        await self.nodeManager.send_packet_queue.put(b'4')
