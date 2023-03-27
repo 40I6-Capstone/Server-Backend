@@ -19,9 +19,27 @@ marker_list = []
 # Get the start time
 start_time = time.time()
 
+
+def pixel_to_cm_ratio(aruco_x, aruco_y):
+    # Use pixel mapping measurements to convert pixels to cm
+    px = 960
+    py = 720
+
+    # Aruco marker real size is 10 x 10 cm
+    ximage = px / aruco_x * 10
+    yimage = py / aruco_y * 10
+
+    # thetaX = 2*math.atan((ximage/2)/distance)
+    # thetaY = 2*math.atan((yimage/2)/distance)
+
+    rx = px / ximage  # pixels per cm
+    ry = py / yimage  # pixels per cm
+    return rx, ry;
+
+
 while True:
     # Capture a frame from the video stream
-    #ret, frame = cap.read()
+    # ret, frame = cap.read()
 
     # receive frame from UAV photo
     frame = UAV.frame
@@ -46,8 +64,8 @@ while True:
             center = np.mean(marker_corners, axis=0)
 
             # Use pixel mapping to transform center coordinate:
-            center[0] = center[0] * OpenCV.rx # Transform x coordinate
-            center[1] = center[1] * OpenCV.ry # Transform y coordinate
+            center[0] = center[0] * OpenCV.rx  # Transform x coordinate
+            center[1] = center[1] * OpenCV.ry  # Transform y coordinate
 
             # Get the current time
             current_time = time.time() - start_time
@@ -58,6 +76,12 @@ while True:
             # # Print the marker ID and its position
             # print("Marker ID: {}, Position: {}".format(marker_id, center))
 
+            if marker_id == 1:  # USE MARKER 1 AS CALIBRATION FOR PIXEL MAPPING
+                # Calculate the x and y dimensions of the marker in pixels
+                x_dim = abs(marker_corners[0][0] - marker_corners[2][0])
+                y_dim = abs(marker_corners[0][1] - marker_corners[2][1])
+                rx, ry = pixel_to_cm_ratio(x_dim, y_dim)
+
     # Display the output frame
     cv2.imshow('output', frame)
 
@@ -66,5 +90,5 @@ while True:
         break
 
 # Release the video capture device and close all windows
-#cap.release()
+# cap.release()
 cv2.destroyAllWindows()
