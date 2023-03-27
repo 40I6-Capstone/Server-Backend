@@ -25,17 +25,17 @@ async def main():
     webapp = Webapp('127.0.0.1', WEBAPP_LOCALS_PORT, mainQueue);
     asyncio.create_task(webapp.start_network());
     
-    uav = UAV(UAV_LOCAL_IP, UAV_LOCAL_PORT);
-    asyncio.create_task(uav.connect());
+    # uav = UAV(UAV_LOCAL_IP, UAV_LOCAL_PORT, mainQueue);
+    # asyncio.create_task(uav.connect());
 
     ugvs = [];
 
     ugvInCritRad = None;
     ugvStopQueue = [];
 
-    # for i in range(NUMBER_OF_UGVS):
-    #     ugvs.append(UGV(LOCAL_IP, UGV_BASE_LOCALS_PORT + i, mainQueue));
-    #     asyncio.create_task(ugvs[i].start_network());
+    for i in range(NUMBER_OF_UGVS):
+        ugvs.append(UGV(LOCAL_IP, UGV_BASE_LOCALS_PORT + i, mainQueue));
+        asyncio.create_task(ugvs[i].start_network());
 
 
 
@@ -49,17 +49,17 @@ async def main():
                 match(message["data"]["type"]):
                     case 'scout':
                         print("Scouting");
-                        # await uav.send('takeoff');
-                        # await uav.send('up 70');
-                        # print(f'height: {uav.state_listener.state.h}')
-                        img = uav.capture_photo();
-                        # height = uav.state_listener.state.h
-                        # print(height);
-                        # await uav.send('land');
-                        height = 150;
-                        shape = run_cv(img, height);
-                        # img = cv2.imread("./OpenCV/Images/round.jpg");
-                        # shape = run_cv(img, 100);
+                        # # await uav.send('takeoff');
+                        # # await uav.send('up 70');
+                        # # print(f'height: {uav.state_listener.state.h}')
+                        # img = uav.capture_photo();
+                        # # height = uav.state_listener.state.h
+                        # # print(height);
+                        # # await uav.send('land');
+                        # height = 150;
+                        # shape = run_cv(img, height);
+                        img = cv2.imread("./OpenCV/Images/round.jpg");
+                        shape = run_cv(img, 100);
                         pathPlan = PathPlanning();
                         pathPlan.planPath(shape, 20, 3, 5);
                         pathScheduler = PathScheduler(NUMBER_OF_UGVS, pathPlan.paths);
@@ -79,8 +79,11 @@ async def main():
                             }
                         };
                         await webapp.putMessageInQueue(json.dumps(message));
-                    case 'ugvLoad':
+                    case 'giveUgvPath':
                         await ugvs[message["data"]["data"]].sendNewPath(pathPlan.paths);
+                    case 'reconnectUav':
+                        uav = UAV(UAV_LOCAL_IP, UAV_LOCAL_PORT, mainQueue);
+                        asyncio.create_task(uav.connect());
             case 'ugv':
                 match(message["data"]["type"]):
                     case 'connected':
@@ -131,6 +134,24 @@ async def main():
                                 if(ugv.id == ugvId):
                                     ugv.go();
                                     break;
+            case 'UAV':
+                match(message["data"]["type"]):
+                    case 'connected':
+                        message = {
+                            'type': 'uavConnected',
+                        }
+                        await webapp.putMessageInQueue(json.dumps(message));
+                    case 'disconnected':
+                        message = {
+                            'type': 'uavDisconnected',
+                        }
+                        await webapp.putMessageInQueue(json.dumps(message));
+                    case 'sendBat':
+                        message = {
+                            'type': 'updateBatState',
+                            'data': message["data"]["data"],
+                        }
+                        await webapp.putMessageInQueue(json.dumps(message));
 
 
 
