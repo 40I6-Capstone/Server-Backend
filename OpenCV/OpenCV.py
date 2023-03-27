@@ -222,17 +222,12 @@ def run_cv(frame: cv2.Mat, height):
         cv2.circle(img_copy, center, radius, color, thickness)
         print(f'radius: {radius/r}');
 
+        # Make a new circle to discretize around the original circle
+        adjusted_radius = math.sqrt(radius ^ 2 + (6 * r) ^ 2)
+
         # calculate the midpoints of each boom when placed in the discretized circle
         # TODO - modify side length in this function once we know the true length of the booms we will be using
-        circle_coords = circle_discretize(center_x=round(x + w / 2), center_y=round(y + h / 2), radius=radius, side_len=12*r)
-        # circle_coords = get_all_circle_coords(x_center=round(x + w / 2),
-        #                                       y_center=round(y + h / 2),
-        #                                       radius=radius,
-        #                                       n_points=15)
-
-        # adjusted_x = circle_coords
-        # adjusted_circle_coords =
-
+        circle_coords = circle_discretize(center_x=round(x + w / 2), center_y=round(y + h / 2), radius=adjusted_radius, side_len=12*r)
 
         # Convert the coordinates to integers so that they can actually be displayed on the image
         int_circle_coords = list(np.rint(np.array(circle_coords)).astype(int))
