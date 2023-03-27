@@ -94,7 +94,6 @@ def nothing(x):
 # takes four arguments: the x and y coordinates of the center of the circle, the radius of the circle, and the side length. The function uses the math module to calculate the x and y coordinates of each vertex of the polygon,
 # and appends these coordinates to a list called points. The function then returns this list of points.
 # effectively, this returns the center point for each oil boom in a list.
-# TODO - How will we ensure the UGV places the boom at the appropriate angle?
 def circle_discretize(center_x, center_y, radius, side_len):
     num_sides = math.ceil(math.pi / (math.atan(side_len / (2 * radius))))  # formula derived on onenote
     points = []
@@ -104,7 +103,7 @@ def circle_discretize(center_x, center_y, radius, side_len):
         angle = 2 * math.pi * i / num_sides
         x = center_x + radius * math.cos(base_angle + angle)
         y = center_y + radius * math.sin(base_angle + angle)
-        points.append((x, y))
+        points.append((x, y)) # The point closest to the origin is the first one
     return points
 
 
@@ -143,7 +142,7 @@ def run_cv(frame: cv2.Mat, height):
     hsv = cv2.cvtColor(frame_high_contrast, cv2.COLOR_BGR2HSV)
 
     #TODO set actual height value
-    r = pixel_to_cm_ratio(height);
+    r = Aruco.pixel_to_cm_ratio(height);
     # min = [0,0,0]
     # max = [180,255,255]
 
@@ -215,7 +214,7 @@ def run_cv(frame: cv2.Mat, height):
         buffer = 1.20
         largest_side = largest_side * buffer
 
-        # Draw a circle around the spill based on the buffer bounding box. We must round to get a whole number of pixels otherwise drawing the circle will not work
+        # Draw a circle around the spill based on the buffer bounding box. We must round to get a whole number of pixels otherwise drawing the circle on the image will not work
         center = (round(x + w / 2), round(y + h / 2))
         radius = round(largest_side / 2)
         color = orange
@@ -230,6 +229,10 @@ def run_cv(frame: cv2.Mat, height):
         #                                       y_center=round(y + h / 2),
         #                                       radius=radius,
         #                                       n_points=15)
+
+        # adjusted_x = circle_coords
+        # adjusted_circle_coords =
+
 
         # Convert the coordinates to integers so that they can actually be displayed on the image
         int_circle_coords = list(np.rint(np.array(circle_coords)).astype(int))

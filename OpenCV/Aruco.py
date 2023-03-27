@@ -34,61 +34,63 @@ def pixel_to_cm_ratio(aruco_x, aruco_y):
 
     rx = px / ximage  # pixels per cm
     ry = py / yimage  # pixels per cm
-    return rx, ry;
+    return (rx + ry) / 2;
 
 
-while True:
-    # Capture a frame from the video stream
-    # ret, frame = cap.read()
+def Aruco():
+    while True:
+        # Capture a frame from the video stream
+        # ret, frame = cap.read()
 
-    # receive frame from UAV photo
-    frame = UAV.frame
+        # receive frame from UAV photo
+        frame = UAV.frame
 
-    # Convert the frame to grayscale
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        # Convert the frame to grayscale
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    # Detect the ArUco markers in the frame
-    corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray, aruco_dict, parameters=aruco_params)
+        # Detect the ArUco markers in the frame
+        corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray, aruco_dict, parameters=aruco_params)
 
-    # If any markers are detected, draw the markers and their IDs on the frame
-    if ids is not None:
-        cv2.aruco.drawDetectedMarkers(frame, corners, ids)
+        # If any markers are detected, draw the markers and their IDs on the frame
+        if ids is not None:
+            cv2.aruco.drawDetectedMarkers(frame, corners, ids)
 
-        # Loop over the detected markers
-        for i, marker_id in enumerate(ids):
-            # Get the corner coordinates of the marker
-            marker_corners = corners[i][0]
-            # currently, top-left of the image is 0,0
+            # Loop over the detected markers
+            for i, marker_id in enumerate(ids):
 
-            # Compute the center of the marker by taking the average of the corner coordinates
-            center = np.mean(marker_corners, axis=0)
+                if marker_id == 1:  # USE MARKER 1 AS CALIBRATION FOR PIXEL MAPPING
+                    # Calculate the x and y dimensions of the marker in pixels
+                    x_dim = abs(marker_corners[0][0] - marker_corners[2][0])
+                    y_dim = abs(marker_corners[0][1] - marker_corners[2][1])
+                    r = pixel_to_cm_ratio(x_dim, y_dim)
 
-            # Use pixel mapping to transform center coordinate:
-            center[0] = center[0] * OpenCV.rx  # Transform x coordinate
-            center[1] = center[1] * OpenCV.ry  # Transform y coordinate
+                # Get the corner coordinates of the marker
+                marker_corners = corners[i][0]
+                # currently, top-left of the image is 0,0
 
-            # Get the current time
-            current_time = time.time() - start_time
+                # Compute the center of the marker by taking the average of the corner coordinates
+                center = np.mean(marker_corners, axis=0)
 
-            # Add the marker ID, position and time to the marker list
-            marker_list.append((marker_id, center, current_time))
+                # Use pixel mapping to transform center coordinate:
+                center[0] = center[0] * r  # Transform x coordinate
+                center[1] = center[1] * r  # Transform y coordinate
 
-            # # Print the marker ID and its position
-            # print("Marker ID: {}, Position: {}".format(marker_id, center))
+                # Get the current time
+                current_time = time.time() - start_time
 
-            if marker_id == 1:  # USE MARKER 1 AS CALIBRATION FOR PIXEL MAPPING
-                # Calculate the x and y dimensions of the marker in pixels
-                x_dim = abs(marker_corners[0][0] - marker_corners[2][0])
-                y_dim = abs(marker_corners[0][1] - marker_corners[2][1])
-                rx, ry = pixel_to_cm_ratio(x_dim, y_dim)
+                # Add the marker ID, position and time to the marker list
+                marker_list.append((marker_id, center, current_time))
 
-    # Display the output frame
-    cv2.imshow('output', frame)
+                # # Print the marker ID and its position
+                # print("Marker ID: {}, Position: {}".format(marker_id, center))
 
-    # Check for the 'q' key to quit the program
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+        # Display the output frame
+        cv2.imshow('output', frame)
 
-# Release the video capture device and close all windows
-# cap.release()
-cv2.destroyAllWindows()
+        # Check for the 'q' key to quit the program
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    # Release the video capture device and close all windows
+    # cap.release()
+    cv2.destroyAllWindows()
