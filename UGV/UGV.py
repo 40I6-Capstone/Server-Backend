@@ -31,9 +31,10 @@ class UGV:
         self.stateHistory = [];
         self.diagStateHistory = [];
         self.mainQueue = mainQueue;
+        self.startStatePoll = False;
 
     def getNodeState(self):
-        state = self.getStateHistory[-1].convertToDict();
+        state = self.stateHistory[-1].convertToDict();
         if (state["State"] == State.NODE_IDLE and len(self.pathIndexes) == 0):
             state["State"] = State.NODE_DONE;
         return state;
@@ -134,11 +135,12 @@ class UGV:
     async def sendNewPath(self, paths):
         pathPoints = paths[self.pathIndexes.pop(0)].points;
         for point in pathPoints:
-            await self.nodeManager.send_packet_queue.put(struct.pack("bff", b'2', point[0], point[1]));
-            # await self.nodeManager.send_packet_queue.put(f'2{point[0]}{point[1]}');
-
+            await self.nodeManager.send_packet_queue.put(struct.pack("cdd", b'2', point[0], point[1]));
+        if(not self.startStatePoll):
+            self.startStatePoll = True;
+            asyncio.create_task(self.getState());
+    
     async def getState(self):
-        await asyncio.sleep(15);
         while (1):
             if (len(self.pathIndexes) == 0): continue;
             await self.nodeManager.send_packet_queue.put(b'1');

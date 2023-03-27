@@ -1,4 +1,5 @@
 from enum import Enum
+import struct
 
 class State (Enum):
     NODE_IDLE = 0;
@@ -43,22 +44,27 @@ class node_state(Packet):
         self.convertData()
 
     def convertData(self):
-        self.code = self.data[0] # packet code
-        self.x = self.data[1:9]  # Estimated x position relative to start (double - 8 bytes)
-        self.y = self.data[9:17] # Estimated y position relative to start (double - 8 bytes)
-        self.velocity = self.data[17:25] # current velocity (double - 8 bytes)
-        self.heading = self.data[25:33]  # heading angle relative to start (double - 8 bytes)
-        self.ts_ms = self.data[33:41]  # time stamp in ms since start (uint64_t - 8 bytes)
-        self.State = self.data[41:42]  # byte enumeration of node executing state (char - 1 byte)
-        self.x_exp = self.data[42:50]  # double
-        self.y_exp = self.data[50:58]  # double
-        self.velocity_exp = self.data[58:66]  # double
-        self.heading_exp = self.data[66:74]  # double
+        data = struct.unpack('cddddQhdddd', self.data);
+        self.code = data[0].decode() # packet code
+        self.x = data[1]  # Estimated x position relative to start (double - 8 bytes)
+        self.y = data[2] # Estimated y position relative to start (double - 8 bytes)
+        self.velocity = data[3] # current velocity (double - 8 bytes)
+        self.heading = data[4]  # heading angle relative to start (double - 8 bytes)
+        self.ts_ms = data[5]  # time stamp in ms since start (uint64_t - 8 bytes)
+        self.State = State(data[6])  # byte enumeration of node executing state (char - 1 byte)
+        self.x_exp = data[7]  # double
+        self.y_exp = data[8]  # double
+        self.velocity_exp = data[9]  # double
+        self.heading_exp = data[10]  # double
     
     def convertToDict(self):
         dict = vars(self);
-        del dict["data"];
-        del dict["code"];
+        try:
+            del dict["data"];
+            del dict["code"];
+            dict["State"] = dict["State"].name;
+        except:
+            print("data or code doesn't exist or state is not enum");
         return dict;
 
 
