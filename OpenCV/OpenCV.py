@@ -106,21 +106,7 @@ def circle_discretize(center_x, center_y, radius, side_len):
         points.append((x, y)) # The point closest to the origin is the first one
     return points
 
-
-def pixel_to_cm_ratio(distance):
-    # Use pixel mapping measurements to convert pixels to cm
-    px = 2592
-    py = 1936
-    thetaX = 0.990279  # obtained from pixel mapping measurements
-    thetaY = 0.76965  # obtained from pixel mapping measurements
-    ximage = math.tan(thetaX / 2) * distance * 2
-    yimage = math.tan(thetaY / 2) * distance * 2
-    rx = px / ximage  # pixels per cm
-    ry = py / yimage  # pixels per cm
-    return (rx+ry)/(2);
-
-
-def run_cv(frame: cv2.Mat, height):
+def run_cv(frame: cv2.Mat):
     if debug:
         cv2.namedWindow("Trackbars", cv2.WINDOW_NORMAL)
 
@@ -141,8 +127,7 @@ def run_cv(frame: cv2.Mat, height):
     frame_high_contrast = apply_brightness_contrast(frame, 0, 20)
     hsv = cv2.cvtColor(frame_high_contrast, cv2.COLOR_BGR2HSV)
 
-    #TODO set actual height value
-    r = Aruco.pixel_to_cm_ratio(height);
+    r = Aruco.pixel_to_cm_ratio(Aruco.x_dim, Aruco.y_dim);
     # min = [0,0,0]
     # max = [180,255,255]
 
