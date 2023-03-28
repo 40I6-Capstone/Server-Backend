@@ -1,8 +1,8 @@
 import cv2
 import time
-import OpenCV
+import asyncio
 import numpy as np
-import UAV.UAV as UAV
+from UAV.UAV import UAV
 
 # Load the ArUco dictionary
 aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_6X6_250)
@@ -37,13 +37,13 @@ def pixel_to_cm_ratio(aruco_x, aruco_y):
     return (rx + ry) / 2;
 
 
-def Aruco():
+async def Aruco(uav: UAV):
     while True:
         # Capture a frame from the video stream
         # ret, frame = cap.read()
 
         # receive frame from UAV photo
-        frame = UAV.frame
+        frame = uav.capture_photo();
 
         # Convert the frame to grayscale
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -90,6 +90,7 @@ def Aruco():
         # Check for the 'q' key to quit the program
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+        await asyncio.sleep(5);
 
     # Release the video capture device and close all windows
     # cap.release()
