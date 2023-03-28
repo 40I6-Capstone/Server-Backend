@@ -5,7 +5,7 @@
 import cv2
 import numpy as np
 import math
-import Aruco
+# import OpenCV.Aruco as Aruco
 
 global debug
 debug = False
@@ -106,7 +106,20 @@ def circle_discretize(center_x, center_y, radius, side_len):
         points.append((x, y)) # The point closest to the origin is the first one
     return points
 
-def run_cv(frame: cv2.Mat):
+def pixel_to_cm_ratio(distance):
+    # Use pixel mapping measurements to convert pixels to cm
+    px = 2592
+    py = 1936
+    thetaX = 0.990279  # obtained from pixel mapping measurements
+    thetaY = 0.76965  # obtained from pixel mapping measurements
+    ximage = math.tan(thetaX / 2) * distance * 2
+    yimage = math.tan(thetaY / 2) * distance * 2
+    rx = px / ximage  # pixels per cm
+    ry = py / yimage  # pixels per cm
+    return (rx+ry)/(2);
+
+
+def run_cv(frame: cv2.Mat, height):
     if debug:
         cv2.namedWindow("Trackbars", cv2.WINDOW_NORMAL)
 
@@ -127,7 +140,8 @@ def run_cv(frame: cv2.Mat):
     frame_high_contrast = apply_brightness_contrast(frame, 0, 20)
     hsv = cv2.cvtColor(frame_high_contrast, cv2.COLOR_BGR2HSV)
 
-    r = Aruco.pixel_to_cm_ratio(Aruco.x_dim, Aruco.y_dim);
+    r = pixel_to_cm_ratio(height);
+    # r = Aruco.pixel_to_cm_ratio(Aruco.x_dim, Aruco.y_dim);
     # min = [0,0,0]
     # max = [180,255,255]
 
@@ -195,8 +209,7 @@ def run_cv(frame: cv2.Mat):
 
         # add a buffer to the bounding box
         largest_side = max(w, h)
-        print(f'largest side: {largest_side/r}');
-        buffer = 1.20
+        buffer = 1.10
         largest_side = largest_side * buffer
 
         # Draw a circle around the spill based on the buffer bounding box. We must round to get a whole number of pixels otherwise drawing the circle on the image will not work
@@ -205,10 +218,10 @@ def run_cv(frame: cv2.Mat):
         color = orange
         thickness = 15
         cv2.circle(img_copy, center, radius, color, thickness)
-        print(f'radius: {radius/r}');
 
         # Make a new circle to discretize around the original circle
-        adjusted_radius = math.sqrt(radius ^ 2 + (6 * r) ^ 2)
+        adjusted_radius = math.sqrt(math.pow(radius, 2) + math.pow((6 * r),2))
+        print(f'radius: {adjusted_radius/r}');
 
         # calculate the midpoints of each boom when placed in the discretized circle
         # TODO - modify side length in this function once we know the true length of the booms we will be using
