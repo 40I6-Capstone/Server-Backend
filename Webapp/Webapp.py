@@ -20,7 +20,6 @@ class Webapp:
 
     async def _network_handler(self, websocket):
         self.websocket = websocket;
-        await self.setupTestTask();
 
         consumer_task = asyncio.create_task(self.getPacket(websocket));
         producer_task = asyncio.create_task(self.sendPacket(websocket));
@@ -39,8 +38,6 @@ class Webapp:
                 "data": data
             }
             await self.mainQueue.put(data);
-            # if(data["type"] == "start"):
-            #     asyncio.create_task(self.testTask());
 
     
     async def sendPacket(self, websocket):
@@ -53,53 +50,6 @@ class Webapp:
     async def putMessageInQueue(self, value):
         await self.send_message_queue.put(value);
         await asyncio.sleep(0.5);
-
-    async def setupTestTask(self): 
-        message = {
-            'source': 'ugv',
-            'data': {
-                'type': 'connected',
-                'id': 0,
-            }
-        };
-
-        await self.mainQueue.put(message);
-        
-
-    async def testTask(self): 
-        vHeadActFile = open("../UGVDashboard/velocity_heading_actual.csv", "r");
-        vHeadExpFile = open("../UGVDashboard/velocity_heading_expected.csv", "r");
-        posActFile = open("../UGVDashboard/position_actual.csv", "r");
-        posExpFile = open("../UGVDashboard/position_expected.csv", "r");
-        while (1):
-            vHAct = vHeadActFile.readline();
-            vHAct = vHAct.split(',');
-            vHExp = vHeadExpFile.readline();
-            vHExp = vHExp.split(',');
-            posAct = posActFile.readline();
-            posAct = posAct.split(',');
-            posExp = posExpFile.readline();
-            posExp = posExp.split(',');
-            if(len(vHAct)>0):
-                message = {
-                    "type": "ugvData",
-                    "data": {
-                        "id": 0,
-                        "data": {
-                            "ts_ms": vHAct[0],
-                            "x": posAct[1],
-                            "y": posAct[2],
-                            "velocity": vHAct[1],
-                            "heading": vHAct[2],
-                            "x_exp": posExp[1],
-                            "y_exp": posExp[2],
-                            "velocity_exp": vHExp[1],
-                            "heading_exp": vHExp[2]
-                        }
-                    }
-                };
-                await self.putMessageInQueue(json.dumps(message));
-            await asyncio.sleep(1);
             
     
 
