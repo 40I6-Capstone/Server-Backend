@@ -17,16 +17,23 @@ UGV_BASE_LOCALS_PORT = 63734;
 
 WEBAPP_LOCALS_PORT = 63733;
 
-NUMBER_OF_UGVS = 1;
+NUMBER_OF_UGVS = 2;
+
 
 async def main():
+    backgroundtasks = set();
+
     mainQueue = asyncio.Queue();
 
     webapp = Webapp('127.0.0.1', WEBAPP_LOCALS_PORT, mainQueue);
-    asyncio.create_task(webapp.start_network());
+    webappTask = asyncio.create_task(webapp.start_network());
+    backgroundtasks.add(webappTask);
+    webappTask.add_done_callback(backgroundtasks.discard);
     
     # uav = UAV(UAV_LOCAL_IP, UAV_LOCAL_PORT, mainQueue);
-    # asyncio.create_task(uav.connect());
+    # uavTask = asyncio.create_task(uav.connect());
+    # backgroundtasks.add(uavTask);
+    # uavTask.add_done_callback(backgroundtasks.discard);
 
     ugvs = [];
 
@@ -35,7 +42,9 @@ async def main():
 
     for i in range(NUMBER_OF_UGVS):
         ugvs.append(UGV(LOCAL_IP, UGV_BASE_LOCALS_PORT + i, mainQueue));
-        asyncio.create_task(ugvs[i].start_network());
+        ugvTask = asyncio.create_task(ugvs[i].start_network());
+        backgroundtasks.add(ugvTask);
+        ugvTask.add_done_callback(backgroundtasks.discard);
 
 
 
@@ -80,6 +89,7 @@ async def main():
                         };
                         await webapp.putMessageInQueue(json.dumps(message));
                     case 'giveUgvPath':
+                        print(f'give ugv {message["data"]["data"]} a path');
                         await ugvs[message["data"]["data"]].sendNewPath(pathPlan.paths);
                     case 'reconnectUav':
                         uav = UAV(UAV_LOCAL_IP, UAV_LOCAL_PORT, mainQueue);
@@ -95,7 +105,6 @@ async def main():
                                 'state': State(0).name,
                             }
                         }; 
-                        print(message);
                         await webapp.putMessageInQueue(json.dumps(message));
                     case 'state':
                         message = {
@@ -117,22 +126,26 @@ async def main():
                         await webapp.putMessageInQueue(json.dumps(message));
                     case 'enterCritRad':
                         if(ugvInCritRad == None):
+                            print(f'ugv {message["data"]["id"]} entering crit rad')
                             ugvInCritRad = message["data"]["id"];
                         else:
+                            print(f'stop ugv {message["data"]["id"]}')
                             ugvStopQueue.append(message["data"]["id"]);
                             for ugv in ugvs:
                                 if(ugv.id == message["data"]["id"]):
-                                    ugv.stop();
+                                    await ugv.stop();
                                     break;
                     case 'leaveCritRad':
+                        print(f'ugv {ugvInCritRad} leaving crit rad')
                         if(len(ugvStopQueue) == 0):
                             ugvInCritRad = None;
                         else:
                             ugvId = ugvStopQueue.pop(0);
+                            print(f'ugv {ugvId} entering crit rad')
                             ugvInCritRad = ugvId;
                             for ugv in ugvs:
                                 if(ugv.id == ugvId):
-                                    ugv.go();
+                                    await ugv.go();
                                     break;
             case 'UAV':
                 match(message["data"]["type"]):
@@ -152,6 +165,8 @@ async def main():
                             'data': message["data"]["data"],
                         }
                         await webapp.putMessageInQueue(json.dumps(message));
+        mainQueue.task_done();
+
 
 
 
