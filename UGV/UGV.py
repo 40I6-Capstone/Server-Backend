@@ -32,6 +32,7 @@ class UGV:
         self.diagStateHistory = [];
         self.mainQueue = mainQueue;
         self.startStatePoll = False;
+        self.currentPathIndex = None;
 
     def getNodeState(self):
         state = self.stateHistory[-1].convertToDict();
@@ -74,6 +75,7 @@ class UGV:
             task.cancel();
 
     async def updateState(self):
+        print(f'get states from ugv {self.id}')
         await self.updateStateSem.acquire();
         while (1):
             await self.updateStateSem.acquire();
@@ -87,6 +89,17 @@ class UGV:
                 }
             };
             await self.mainQueue.put(message);
+            if(len(self.stateHistory) > 1 and self.stateHistory[-2].State == State.NODE_PATH_LEAVE.name and self.nodeManager.state.State == State.NODE_PATH_RETURN.name):
+                message = {
+                    "source": "ugv",
+                    "data": {
+                        "type": "placeBoom",
+                        "pathIndex": self.currentPathIndex,
+                        "ugvId": self.id,
+                    }
+                }
+                await self.mainQueue.put(message);
+
             # if ugv is in crit rad
             if(not self.inCritRad):     
                 if(math.sqrt(self.nodeManager.state.x*self.nodeManager.state.x +  self.nodeManager.state.y*self.nodeManager.state.y) <= self.crit_rad):
@@ -134,7 +147,9 @@ class UGV:
         self.pathIndexes = pathsIndexes;
 
     async def sendNewPath(self, paths):
-        pathPoints = paths[self.pathIndexes.pop(0)].points;
+        print(f'send path to ugv {self.id}');
+        self.currentPathIndex = self.pathIndexes.pop(0);
+        pathPoints = paths[self.currentPathIndex].points;
         for point in pathPoints:
             await self.nodeManager.send_packet_queue.put(struct.pack("cdd", b'2', point[0], point[1]));
         if(not self.startStatePoll):
@@ -145,7 +160,7 @@ class UGV:
         while (1):
             if (len(self.pathIndexes) == 0): continue;
             await self.nodeManager.send_packet_queue.put(b'1');
-            await asyncio.sleep(1);
+            await asyncio.sleep(0.5);
 
     async def stop(self):
         await self.nodeManager.send_packet_queue.put(b'3')

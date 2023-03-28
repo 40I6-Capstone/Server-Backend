@@ -8,6 +8,7 @@ from PathPlanning.PathScheduler import PathScheduler;
 import asyncio;
 import cv2;
 import json;
+import base64
 
 UAV_LOCAL_IP = "192.168.10.2";
 UAV_LOCAL_PORT = 8890;
@@ -19,6 +20,12 @@ WEBAPP_LOCALS_PORT = 63733;
 
 NUMBER_OF_UGVS = 2;
 
+def encode_img(img, im_type):
+    """Encodes an image as a png and encodes to base 64 for display."""
+    success, encoded_img = cv2.imencode('.{}'.format(im_type), img)
+    if success:
+        return base64.b64encode(encoded_img).decode()
+    return ''
 
 async def main():
     backgroundtasks = set();
@@ -68,7 +75,7 @@ async def main():
                         # height = 150;
                         # shape = run_cv(img, height);
                         img = cv2.imread("./OpenCV/Images/round.jpg");
-                        shape = run_cv(img, 100);
+                        [shape, imgWidthCm, imgHeightCm] = run_cv(img, 100);
                         pathPlan = PathPlanning();
                         pathPlan.planPath(shape, 20, 3, 5);
                         pathScheduler = PathScheduler(NUMBER_OF_UGVS, pathPlan.paths);
@@ -88,6 +95,20 @@ async def main():
                             }
                         };
                         await webapp.putMessageInQueue(json.dumps(message));
+
+                        encoded_img = encode_img(cv2.flip(img,0), 'jpg')
+                        b64_src = 'data:image/jpeg;base64,'
+                        img_src = b64_src + encoded_img
+                        message = {
+                            "type": "imageUpdate",
+                            "data": {
+                                "src": img_src,
+                                "dim": [imgWidthCm, imgHeightCm],
+                                "off": [0,0],
+                            }
+                        };
+                        await webapp.putMessageInQueue(json.dumps(message));
+                        
                     case 'giveUgvPath':
                         print(f'give ugv {message["data"]["data"]} a path');
                         await ugvs[message["data"]["data"]].sendNewPath(pathPlan.paths);
@@ -147,6 +168,15 @@ async def main():
                                 if(ugv.id == ugvId):
                                     await ugv.go();
                                     break;
+                    case 'placeBoom':
+                        message = {
+                            "type": "ugvPlaceBoom",
+                            "data": {
+                                "pathIndex": message["data"]["pathIndex"],
+                                "ugvId": message["data"]["ugvId"]
+                            }
+                        }
+                        await webapp.putMessageInQueue(json.dumps(message));
             case 'UAV':
                 match(message["data"]["type"]):
                     case 'connected':

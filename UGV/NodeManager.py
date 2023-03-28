@@ -35,14 +35,10 @@ class NodeManager:
                     diag_packet = Packet.diagnostic_state(message)
                     self.diag_state = diag_packet;
                     updateDiagStateSem.release();
-                    # add_msg = asyncio.create_task(self.send_packet_queue.putMessageInQueue(diag_packet))
-                    # await add_msg;
                 case '1':
                     node_state_packet = Packet.node_state(message)
                     self.state = node_state_packet;
                     updateStateSem.release();
-                    # add_msg = asyncio.create_task(self.send_packet_queue.putMessageInQueue(node_state_packet))
-                    # await add_msg;
                 case '6':
                     if message['data'] == 'ready':
                         self.send_path_semaphore.release()  # adds 1 to the semaphore so that data can be sent to the esp
@@ -57,4 +53,4 @@ class NodeManager:
             message = await self.send_packet_queue.get();
             await websocket.send(message);
             self.send_packet_queue.task_done();
-            await asyncio.sleep(0.05);
+            await asyncio.sleep(0.01);
