@@ -89,7 +89,7 @@ class UGV:
             await self.mainQueue.put(message);
             # if ugv is in crit rad
             if(not self.inCritRad):     
-                if(math.sqrt(self.nodeManager.state.x*self.nodeManager.state.x +  self.nodeManager.state.y*self.nodeManager.state.y) < self.crit_rad):
+                if(math.sqrt(self.nodeManager.state.x*self.nodeManager.state.x +  self.nodeManager.state.y*self.nodeManager.state.y) <= self.crit_rad):
                     self.inCritRad = True;
                     message = {
                         "source": "ugv",
@@ -109,6 +109,7 @@ class UGV:
                             "id": self.id,
                         }
                     }
+
                     await self.mainQueue.put(message);
 
     async def updateDiagState(self):
