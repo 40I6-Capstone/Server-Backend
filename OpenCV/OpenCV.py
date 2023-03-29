@@ -134,7 +134,7 @@ def run_cv(frame: cv2.Mat):
     frame_high_contrast = apply_brightness_contrast(frame, 0, 20)
     hsv = cv2.cvtColor(frame_high_contrast, cv2.COLOR_BGR2HSV)
 
-    r = Aruco.pixel_to_cm_ratio_from_frame(cv2.flip(frame,1));
+    r = Aruco.pixel_to_cm_ratio_from_frame(cv2.flip(frame,0));
     # min = [0,0,0]
     # max = [180,255,255]
 

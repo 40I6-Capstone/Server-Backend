@@ -71,7 +71,7 @@ async def main():
                         # img = uav.capture_photo();
                         # await uav.send('land');
                         img = cv2.imread("./OpenCV/Images/testImg.jpg");
-                        [shape, imgWidthCm, imgHeightCm] = run_cv(cv2.flip(img,1));
+                        [shape, imgWidthCm, imgHeightCm] = run_cv(cv2.flip(img,0));
                         pathPlan = PathPlanning();
                         pathPlan.planPath(shape, 20, 3, 5);
                         pathScheduler = PathScheduler(NUMBER_OF_UGVS, pathPlan.paths);

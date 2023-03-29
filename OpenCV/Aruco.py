@@ -57,6 +57,7 @@ def pixel_to_cm_ratio_from_frame(frame: cv2.Mat):
         y_dim = abs(marker_corners[0][1] - marker_corners[2][1])
     else:
         print('Error finding aruco marker');
+        return;
     # Use pixel mapping measurements to convert pixels to cm
     px = frame.shape[1]
     py = frame.shape[0]

@@ -36,10 +36,12 @@ class UAV:
                 
             try:
                 sent_message, response = self.pending.pop(0)
+                print(message, message[0].isnumeric());
+                result = None;
                 if message == 'ok':
                     result = None
-                elif int(message):
-                    result = message
+                elif message[0].isnumeric():
+                    result = message;
                 else:
                     response.set_exception(UAV.Error(message))
                     return
@@ -114,7 +116,6 @@ class UAV:
         :rtype: str, unless `response_parser` is used.
         '''
         if not self._transport.is_closing():
-            
             self._transport.sendto(message.encode())
 
             response = self.loop.create_future()
