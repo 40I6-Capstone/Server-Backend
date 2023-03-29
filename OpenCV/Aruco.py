@@ -36,8 +36,45 @@ def pixel_to_cm_ratio(aruco_x, aruco_y):
     ry = py / yimage  # pixels per cm
     return (rx + ry) / 2;
 
+def pixel_to_cm_ratio_from_frame(frame: cv2.Mat):
 
-async def Aruco(uav: UAV):
+    # Convert the frame to grayscale
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    # Detect the ArUco markers in the frame
+    corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray, aruco_dict, parameters=aruco_params)
+
+    # If any markers are detected, draw the markers and their IDs on the frame
+    if ids is not None:
+        cv2.aruco.drawDetectedMarkers(frame, corners, ids)
+
+        # Get the corner coordinates of the marker
+        marker_corners = corners[0][0]
+        print(corners[0]);
+
+        # Calculate the x and y dimensions of the marker in pixels
+        x_dim = abs(marker_corners[0][0] - marker_corners[2][0])
+        y_dim = abs(marker_corners[0][1] - marker_corners[2][1])
+    else:
+        print('Error finding aruco marker');
+    # Use pixel mapping measurements to convert pixels to cm
+    px = frame.shape[1]
+    py = frame.shape[0]
+
+    # Aruco marker real size is 10 x 10 cm
+    ximage = px / x_dim * 10
+    yimage = py / y_dim * 10
+
+    # thetaX = 2*math.atan((ximage/2)/distance)
+    # thetaY = 2*math.atan((yimage/2)/distance)
+
+    rx = px / ximage  # pixels per cm
+    ry = py / yimage  # pixels per cm
+    return (rx + ry) / 2;
+
+
+
+async def Aruco(uav:UAV):
     while True:
         # Capture a frame from the video stream
         # ret, frame = cap.read()
@@ -57,15 +94,16 @@ async def Aruco(uav: UAV):
 
             # Loop over the detected markers
             for i, marker_id in enumerate(ids):
+                # Get the corner coordinates of the marker
+                marker_corners = corners[i][0]
 
-                if marker_id == 1:  # USE MARKER 1 AS CALIBRATION FOR PIXEL MAPPING
+                if marker_id == 0:  # USE MARKER 1 AS CALIBRATION FOR PIXEL MAPPING
                     # Calculate the x and y dimensions of the marker in pixels
                     x_dim = abs(marker_corners[0][0] - marker_corners[2][0])
                     y_dim = abs(marker_corners[0][1] - marker_corners[2][1])
                     r = pixel_to_cm_ratio(x_dim, y_dim)
 
-                # Get the corner coordinates of the marker
-                marker_corners = corners[i][0]
+
                 # currently, top-left of the image is 0,0
 
                 # Compute the center of the marker by taking the average of the corner coordinates

@@ -5,7 +5,7 @@
 import cv2
 import numpy as np
 import math
-# import OpenCV.Aruco as Aruco
+import OpenCV.Aruco as Aruco
 
 global debug
 debug = False
@@ -15,13 +15,7 @@ global Pipeline
 Pipeline = False
 
 class Shape:
-    def __init__(self, vertices, contour):
-        #TODO Change to actual pixel mapping
-        # coeff = 15
-        # self.contour = contour/coeff;
-        # vertices = [[y / coeff for y in x] for x in vertices];
-        # vertices = pixel_to_cm(100, vertices);
-        self.contour = np.array(contour);
+    def __init__(self, vertices):
         midpoints = [];
         norms = [];
 
@@ -119,7 +113,7 @@ def pixel_to_cm_ratio(distance):
     return (rx+ry)/(2);
 
 
-def run_cv(frame: cv2.Mat, height):
+def run_cv(frame: cv2.Mat):
     if debug:
         cv2.namedWindow("Trackbars", cv2.WINDOW_NORMAL)
 
@@ -140,8 +134,7 @@ def run_cv(frame: cv2.Mat, height):
     frame_high_contrast = apply_brightness_contrast(frame, 0, 20)
     hsv = cv2.cvtColor(frame_high_contrast, cv2.COLOR_BGR2HSV)
 
-    r = pixel_to_cm_ratio(height);
-    # r = Aruco.pixel_to_cm_ratio(Aruco.x_dim, Aruco.y_dim);
+    r = Aruco.pixel_to_cm_ratio_from_frame(cv2.flip(frame,1));
     # min = [0,0,0]
     # max = [180,255,255]
 
@@ -185,9 +178,8 @@ def run_cv(frame: cv2.Mat, height):
 
     # Find the largest Contour and draw a bounding box
     try:
-        # find the biggest countour (c) by the area
+        # find the biggest countour (c) by the area\
         c = max(contours, key=cv2.contourArea)
-        x, y, w, h = cv2.boundingRect(c)  # (x,y) is the top-left coordinate of the rectangle and (w,h) is its width and height.
 
         # red color in BGR
         red = (0, 0, 255)
@@ -195,29 +187,24 @@ def run_cv(frame: cv2.Mat, height):
         green = (0, 0, 255)
         orange = (0, 123, 255)
         pink = (165, 0, 255)
-
-        # draw the bounding rectangle for the biggest contour (c) in red
-        cv2.rectangle(img_copy, (x, y), (x + w, y + h), red, 15)
-
         # Find the index of the largest contour
         areas = [cv2.contourArea(c) for c in contours]
         max_index = np.argmax(areas)
         cnt = contours[max_index]
 
         # # draw the largest contour in blue
-        cv2.drawContours(img_copy, contours, max_index, blue, 15)
+        cv2.drawContours(img_copy, cnt, max_index, blue, 15)
 
-        # add a buffer to the bounding box
-        largest_side = max(w, h)
-        buffer = 1.10
-        largest_side = largest_side * buffer
+        center, radius = cv2.minEnclosingCircle(c)
 
-        # Draw a circle around the spill based on the buffer bounding box. We must round to get a whole number of pixels otherwise drawing the circle on the image will not work
-        center = (round(x + w / 2), round(y + h / 2))
-        radius = round(largest_side / 2)
+        # add a buffer to the bounding circle
+        buffer = 1.20
+        radius = radius * buffer
+
         color = orange
         thickness = 15
-        cv2.circle(img_copy, center, radius, color, thickness)
+        # Draw a circle around the spill based on the buffer bounding box. We must round to get a whole number of pixels otherwise drawing the circle on the image will not work
+        cv2.circle(img_copy,(int(center[0]), int(center[1])), int(radius), color, thickness)
 
         # Make a new circle to discretize around the original circle
         adjusted_radius = math.sqrt(math.pow(radius, 2) + math.pow((6 * r),2))
@@ -225,7 +212,7 @@ def run_cv(frame: cv2.Mat, height):
 
         # calculate the midpoints of each boom when placed in the discretized circle
         # TODO - modify side length in this function once we know the true length of the booms we will be using
-        circle_coords = circle_discretize(center_x=round(x + w / 2), center_y=round(y + h / 2), radius=adjusted_radius, side_len=12*r)
+        circle_coords = circle_discretize(center_x=center[0], center_y=center[1], radius=adjusted_radius, side_len=12*r)
 
         # Convert the coordinates to integers so that they can actually be displayed on the image
         int_circle_coords = list(np.rint(np.array(circle_coords)).astype(int))
@@ -234,7 +221,7 @@ def run_cv(frame: cv2.Mat, height):
         #pixel_to_cm(distance, int_circle_coords) # TODO - get distance from drone here
 
 
-        origin = [round(x + w / 2), round(y + h / 2)]
+        origin = [round(center[0]), round(center[1])]
         unit_normal = []
         # Draw all the points on the image &
         # Calculate a vector between all the points and the origin of the bounding circle and normalize them
@@ -266,10 +253,10 @@ def run_cv(frame: cv2.Mat, height):
         cv2.imshow('Edge', edge)
         # canvas[60:60+mask.shape[0],200:200 + mask.shape[1]] = mask
     cv2.waitKey(10000)
+
     cv2.destroyAllWindows()
     circle_coords_cm = np.array(circle_coords) / r;
-    c_cm = np.array([x[0]/r for x in c]);
-    return Shape(circle_coords_cm,c_cm);
+    return [Shape(circle_coords_cm), frame.shape[1]/r, frame.shape[0]/r];
 
     # # wait for a key to pressed, if not then close
     # key = cv2.waitKey(1)

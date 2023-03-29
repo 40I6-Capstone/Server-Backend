@@ -3,8 +3,8 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np;
 
-img = cv2.imread("./Images/round.jpg");
-shape = run_cv(img);
+img = cv2.imread("./Images/testImg.jpg");
+shape = run_cv(img, 100);
 print("Num of sides", len(shape.midpoints));
 print("Center", shape.centre)
 plt.plot(shape.vertices[:,0], shape.vertices[:,1]);

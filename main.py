@@ -65,17 +65,13 @@ async def main():
                 match(message["data"]["type"]):
                     case 'scout':
                         print("Scouting");
-                        # # await uav.send('takeoff');
-                        # # await uav.send('up 70');
-                        # # print(f'height: {uav.state_listener.state.h}')
+                        # await uav.send('takeoff');
+                        # await uav.send('up 70');
+                        # print(f'height: {uav.state_listener.state.h}')
                         # img = uav.capture_photo();
-                        # # height = uav.state_listener.state.h
-                        # # print(height);
-                        # # await uav.send('land');
-                        # height = 150;
-                        # shape = run_cv(img, height);
-                        img = cv2.imread("./OpenCV/Images/round.jpg");
-                        [shape, imgWidthCm, imgHeightCm] = run_cv(img, 100);
+                        # await uav.send('land');
+                        img = cv2.imread("./OpenCV/Images/testImg.jpg");
+                        [shape, imgWidthCm, imgHeightCm] = run_cv(cv2.flip(img,1));
                         pathPlan = PathPlanning();
                         pathPlan.planPath(shape, 20, 3, 5);
                         pathScheduler = PathScheduler(NUMBER_OF_UGVS, pathPlan.paths);
@@ -96,7 +92,7 @@ async def main():
                         };
                         await webapp.putMessageInQueue(json.dumps(message));
 
-                        encoded_img = encode_img(cv2.flip(img,0), 'jpg')
+                        encoded_img = encode_img(img, 'jpg')
                         b64_src = 'data:image/jpeg;base64,'
                         img_src = b64_src + encoded_img
                         message = {
@@ -111,10 +107,17 @@ async def main():
                         
                     case 'giveUgvPath':
                         print(f'give ugv {message["data"]["data"]} a path');
-                        await ugvs[message["data"]["data"]].sendNewPath(pathPlan.paths);
+                        for ugv in ugvs:
+                            if(ugv.id == message["data"]["data"]):
+                                await ugv.sendNewPath(pathPlan.paths);
+                                break;
                     case 'reconnectUav':
+                        print ('reconnectUav');
                         uav = UAV(UAV_LOCAL_IP, UAV_LOCAL_PORT, mainQueue);
-                        asyncio.create_task(uav.connect());
+                        uavTask = asyncio.create_task(uav.connect());
+                        uavTask.add_done_callback(backgroundtasks.discard);
+
+                        
             case 'ugv':
                 match(message["data"]["type"]):
                     case 'connected':
