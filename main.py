@@ -8,7 +8,7 @@ from PathPlanning.PathScheduler import PathScheduler;
 import asyncio;
 import cv2;
 import json;
-import base64
+import base64;
 
 UAV_LOCAL_IP = "192.168.10.2";
 UAV_LOCAL_PORT = 8890;
@@ -18,7 +18,7 @@ UGV_BASE_LOCALS_PORT = 63734;
 
 WEBAPP_LOCALS_PORT = 63733;
 
-NUMBER_OF_UGVS = 2;
+NUMBER_OF_UGVS = 3;
 
 def encode_img(img, im_type):
     """Encodes an image as a png and encodes to base 64 for display."""
@@ -37,10 +37,10 @@ async def main():
     backgroundtasks.add(webappTask);
     webappTask.add_done_callback(backgroundtasks.discard);
     
-    # uav = UAV(UAV_LOCAL_IP, UAV_LOCAL_PORT, mainQueue);
-    # uavTask = asyncio.create_task(uav.connect());
-    # backgroundtasks.add(uavTask);
-    # uavTask.add_done_callback(backgroundtasks.discard);
+    uav = UAV(UAV_LOCAL_IP, UAV_LOCAL_PORT, mainQueue);
+    uavTask = asyncio.create_task(uav.connect());
+    backgroundtasks.add(uavTask);
+    uavTask.add_done_callback(backgroundtasks.discard);
 
     ugvs = [];
 
@@ -116,6 +116,11 @@ async def main():
                         uav = UAV(UAV_LOCAL_IP, UAV_LOCAL_PORT, mainQueue);
                         uavTask = asyncio.create_task(uav.connect());
                         uavTask.add_done_callback(backgroundtasks.discard);
+                    case 'startSingle':
+                        for ugv in ugvs:
+                            if(ugv.id == message["data"]["data"]["id"]):
+                                await ugv.sendDefinedPath(message["data"]["data"]["path"]);
+                                break;
 
                         
             case 'ugv':
@@ -126,6 +131,7 @@ async def main():
                             'data': {
                                 'id': message["data"]["id"],
                                 'name': f'UGV {message["data"]["id"]}',
+                                'port': message["data"]["port"],
                                 'state': State(0).name,
                             }
                         }; 

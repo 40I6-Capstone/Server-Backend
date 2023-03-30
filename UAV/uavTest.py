@@ -6,24 +6,31 @@ UAV_LOCAL_IP = "192.168.10.2";
 UAV_LOCAL_PORT = 8890;
 
 async def main():
+    mainQueue = asyncio.Queue();
 
-    uav = UAV(UAV_LOCAL_IP, UAV_LOCAL_PORT);
+    uav = UAV(UAV_LOCAL_IP, UAV_LOCAL_PORT, mainQueue);
     print("creating connection");
     # asyncio.create_task(uav.start_network());
     await uav.connect();
-    for i in range(78, 81):
-        input(f'{i}cm click any key to continue');
-        image = uav.capture_photo();
-        print('done');
-        cv2.imwrite(f'../OpenCV/Images/pixleMap{i}cm.jpeg', image);
-        # print(f'bat {uav.state_listener.state.bat}')
-        await uav.send('command');
+    await asyncio.sleep(1);
+    print('Bat', uav.state_listener.state.bat);
+    await uav.send('takeoff');
+    print(' sent takeoff');
+    await asyncio.sleep(5);
+    await uav.send('up 70');
+    print('sent up70');
+    image = uav.capture_photo();
+    cv2.imshow('Tello', image)
+    cv2.waitKey(1000);
     
+    cv2.imwrite('./testImg.jpg', image);
+
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    cv2.imwrite('./grayTestImg.jpg', gray);
+    
+    await uav.send('land');   
     # await uav.send('takeoff')
-    # image = uav.capture_photo();
     # await uav.send('land');
-    # cv2.imshow('Tello', image)
-    # cv2.waitKey(1000);
 
     # for i in range(10):
     #     print(uav.state_listener.state.h);
@@ -48,12 +55,12 @@ async def main():
 
 
 
-    while(1):
+    # while(1):
 
-        uav.capture_photo();
-        cv2.imshow('Tello', image)
-        key = cv2.waitKey(1000);
-        if(key ==27): break;
+    #     uav.capture_photo();
+    #     cv2.imshow('Tello', image)
+    #     key = cv2.waitKey(1000);
+    #     if(key ==27): break;
     # uav.close();  
 asyncio.run(main());
 

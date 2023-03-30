@@ -57,6 +57,7 @@ class UGV:
             "data": {
                 "type": "connected",
                 "id": self.id,
+                "port": self.local_address["local_port"],
             }
         });
 
@@ -152,6 +153,16 @@ class UGV:
         pathPoints = paths[self.currentPathIndex].points;
         for point in pathPoints:
             await self.nodeManager.send_packet_queue.put(struct.pack("cdd", b'2', point[0], point[1]));
+        await self.go();
+        if(not self.startStatePoll):
+            self.startStatePoll = True;
+            asyncio.create_task(self.getState());
+
+    async def sendDefinedPath(self, path):
+        path = np.array(path);
+        for point in path:
+            await self.nodeManager.send_packet_queue.put(struct.pack("cdd", b'2', point[0], point[1]));
+        await self.go();
         if(not self.startStatePoll):
             self.startStatePoll = True;
             asyncio.create_task(self.getState());
@@ -160,7 +171,7 @@ class UGV:
         while (1):
             if (len(self.pathIndexes) == 0): continue;
             await self.nodeManager.send_packet_queue.put(b'1');
-            await asyncio.sleep(0.5);
+            await asyncio.sleep(1);
 
     async def stop(self):
         await self.nodeManager.send_packet_queue.put(b'3')
