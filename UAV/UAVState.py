@@ -31,7 +31,6 @@ class UAVStateListener:
 
         def datagram_received(self, data, addr):
             message = data.decode('ascii')
-            # print('[state] RECEIVED', message)
             state = parse_state_message(message)
             self.on_state_received(state)
 
@@ -39,7 +38,6 @@ class UAVStateListener:
             print('[state] PROTOCOL ERROR', error)
 
         def connection_lost(self, error):
-            # print('[state] CONNECTION LOST', error)
             pass
 
     def __init__(self, local_ip, local_port, main_queue: asyncio.Queue):

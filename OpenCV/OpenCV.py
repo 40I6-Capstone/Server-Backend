@@ -196,6 +196,7 @@ def run_cv(frame: cv2.Mat):
         cv2.drawContours(img_copy, cnt, max_index, blue, 15)
 
         center, radius = cv2.minEnclosingCircle(c)
+        print(f'radius: {radius/r}');
 
         # add a buffer to the bounding circle
         buffer = 1.20
@@ -208,7 +209,6 @@ def run_cv(frame: cv2.Mat):
 
         # Make a new circle to discretize around the original circle
         adjusted_radius = math.sqrt(math.pow(radius, 2) + math.pow((6 * r),2))
-        print(f'radius: {adjusted_radius/r}');
 
         # calculate the midpoints of each boom when placed in the discretized circle
         # TODO - modify side length in this function once we know the true length of the booms we will be using

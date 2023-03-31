@@ -50,7 +50,6 @@ def pixel_to_cm_ratio_from_frame(frame: cv2.Mat):
 
         # Get the corner coordinates of the marker
         marker_corners = corners[0][0]
-        print(corners[0]);
 
         # Calculate the x and y dimensions of the marker in pixels
         x_dim = abs(marker_corners[0][0] - marker_corners[2][0])

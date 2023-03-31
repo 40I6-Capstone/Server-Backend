@@ -36,7 +36,6 @@ class UAV:
                 
             try:
                 sent_message, response = self.pending.pop(0)
-                print(message, message[0].isnumeric());
                 result = None;
                 if message == 'ok':
                     result = None
@@ -146,6 +145,9 @@ class UAV:
 
     async def checkConnection(self):
         while(1):
+            await asyncio.sleep(5);
+            if(len(self._protocol.pending) > 0): 
+                continue;
             result = await self.send('wifi?');
             if (result == None):
                 if(not self._transport == None):
@@ -160,7 +162,6 @@ class UAV:
                 };
                 await self.main_queue.put(message);
                 break;
-            await asyncio.sleep(5);
 
             
 

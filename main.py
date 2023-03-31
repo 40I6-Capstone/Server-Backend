@@ -18,7 +18,7 @@ UGV_BASE_LOCALS_PORT = 63734;
 
 WEBAPP_LOCALS_PORT = 63733;
 
-NUMBER_OF_UGVS = 3;
+NUMBER_OF_UGVS = 1;
 
 def encode_img(img, im_type):
     """Encodes an image as a png and encodes to base 64 for display."""
@@ -65,12 +65,11 @@ async def main():
                 match(message["data"]["type"]):
                     case 'scout':
                         print("Scouting");
-                        # await uav.send('takeoff');
-                        # await uav.send('up 70');
-                        # print(f'height: {uav.state_listener.state.h}')
-                        # img = uav.capture_photo();
-                        # await uav.send('land');
-                        img = cv2.imread("./OpenCV/Images/testImg.jpg");
+                        await uav.send('takeoff');
+                        await uav.send('forward 70');
+                        await uav.send('up 70');
+                        img = uav.capture_photo();
+                        # img = cv2.imread("./OpenCV/Images/testImg.jpg");
                         [shape, imgWidthCm, imgHeightCm] = run_cv(cv2.flip(img,0));
                         pathPlan = PathPlanning();
                         pathPlan.planPath(shape, 20, 3, 5);
@@ -104,6 +103,7 @@ async def main():
                             }
                         };
                         await webapp.putMessageInQueue(json.dumps(message));
+                        await uav.send('land');
                         
                     case 'giveUgvPath':
                         print(f'give ugv {message["data"]["data"]} a path');

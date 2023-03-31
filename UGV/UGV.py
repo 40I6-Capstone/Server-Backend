@@ -15,7 +15,7 @@ ugvInCritRad = None;
 class UGV:
     crit_rad = 0;
     inCritRad = True;
-
+    isDiag = False;
     def __init__(self, local_ip, local_port, mainQueue: asyncio.Queue):
         """
         Binds to the local IP/port to the UGV.
@@ -51,7 +51,6 @@ class UGV:
             return;
         self.id = len(host_ports);
         host_ports.append((self.id, self.local_address["local_port"]));
-        print("UGV", self.id);
         await self.mainQueue.put({
             "source": "ugv",
             "data": {
@@ -76,7 +75,6 @@ class UGV:
             task.cancel();
 
     async def updateState(self):
-        print(f'get states from ugv {self.id}')
         await self.updateStateSem.acquire();
         while (1):
             await self.updateStateSem.acquire();
@@ -90,6 +88,7 @@ class UGV:
                 }
             };
             await self.mainQueue.put(message);
+            if(self.isDiag): continue;
             if(len(self.stateHistory) > 1 and self.stateHistory[-2].State == State.NODE_PATH_LEAVE.name and self.nodeManager.state.State == State.NODE_PATH_RETURN.name):
                 message = {
                     "source": "ugv",
@@ -148,7 +147,7 @@ class UGV:
         self.pathIndexes = pathsIndexes;
 
     async def sendNewPath(self, paths):
-        print(f'send path to ugv {self.id}');
+        self.isDiag = False;
         self.currentPathIndex = self.pathIndexes.pop(0);
         pathPoints = paths[self.currentPathIndex].points;
         for point in pathPoints:
@@ -159,6 +158,7 @@ class UGV:
             asyncio.create_task(self.getState());
 
     async def sendDefinedPath(self, path):
+        self.isDiag = True;
         path = np.array(path);
         for point in path:
             await self.nodeManager.send_packet_queue.put(struct.pack("cdd", b'2', point[0], point[1]));
@@ -169,7 +169,7 @@ class UGV:
     
     async def getState(self):
         while (1):
-            if (len(self.pathIndexes) == 0): continue;
+            # if (len(self.pathIndexes) == 0): continue;
             await self.nodeManager.send_packet_queue.put(b'1');
             await asyncio.sleep(1);
 
