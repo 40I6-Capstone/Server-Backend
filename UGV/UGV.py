@@ -89,16 +89,28 @@ class UGV:
             };
             await self.mainQueue.put(message);
             if(self.isDiag): continue;
-            if(len(self.stateHistory) > 1 and self.stateHistory[-2].State == State.NODE_PATH_LEAVE.name and self.nodeManager.state.State == State.NODE_PATH_RETURN.name):
-                message = {
-                    "source": "ugv",
-                    "data": {
-                        "type": "placeBoom",
-                        "pathIndex": self.currentPathIndex,
-                        "ugvId": self.id,
+            if(len(self.stateHistory) > 1) :
+                if(self.stateHistory[-2].State == State.NODE_PATH_LEAVE.name and self.nodeManager.state.State == State.NODE_PATH_RETURN.name):
+                    message = {
+                        "source": "ugv",
+                        "data": {
+                            "type": "placeBoom",
+                            "pathIndex": self.currentPathIndex,
+                            "ugvId": self.id,
+                        }
                     }
-                }
-                await self.mainQueue.put(message);
+                    await self.mainQueue.put(message);
+                elif(self.stateHistory[-2].State == State.NODE_PATH_RETURN.name and self.nodeManager.state.State == State.NODE_IDLE.name):
+                    print('finished path');
+                    message = {
+                        "source": "ugv",
+                        "data": {
+                            "type": "finishPath",
+                            "pathIndex": self.currentPathIndex,
+                            "ugvId": self.id,
+                        }
+                    }
+                    await self.mainQueue.put(message);
 
             # if ugv is in crit rad
             if(not self.inCritRad):     

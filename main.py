@@ -65,11 +65,11 @@ async def main():
                 match(message["data"]["type"]):
                     case 'scout':
                         print("Scouting");
-                        await uav.send('takeoff');
-                        await uav.send('forward 70');
-                        await uav.send('up 70');
-                        img = uav.capture_photo();
-                        # img = cv2.imread("./OpenCV/Images/testImg.jpg");
+                        # await uav.send('takeoff');
+                        # await uav.send('forward 70');
+                        # await uav.send('up 70');
+                        # img = uav.capture_photo();
+                        img = cv2.imread("./OpenCV/Images/testImg.jpg");
                         [shape, imgWidthCm, imgHeightCm] = run_cv(cv2.flip(img,0));
                         pathPlan = PathPlanning();
                         pathPlan.planPath(shape, 20, 3, 5);
@@ -103,7 +103,7 @@ async def main():
                             }
                         };
                         await webapp.putMessageInQueue(json.dumps(message));
-                        await uav.send('land');
+                        # await uav.send('land');
                         
                     case 'giveUgvPath':
                         print(f'give ugv {message["data"]["data"]} a path');
@@ -180,6 +180,16 @@ async def main():
                     case 'placeBoom':
                         message = {
                             "type": "ugvPlaceBoom",
+                            "data": {
+                                "pathIndex": message["data"]["pathIndex"],
+                                "ugvId": message["data"]["ugvId"]
+                            }
+                        }
+                        await webapp.putMessageInQueue(json.dumps(message));
+                    case 'finishPath':
+                        print('send finish path');
+                        message = {
+                            "type": "ugvDonePath",
                             "data": {
                                 "pathIndex": message["data"]["pathIndex"],
                                 "ugvId": message["data"]["ugvId"]
