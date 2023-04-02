@@ -18,7 +18,8 @@ UGV_BASE_LOCALS_PORT = 63734;
 
 WEBAPP_LOCALS_PORT = 63733;
 
-NUMBER_OF_UGVS = 1;
+NUMBER_OF_UGVS = 4;
+
 
 def encode_img(img, im_type):
     """Encodes an image as a png and encodes to base 64 for display."""
@@ -42,14 +43,19 @@ async def main():
     backgroundtasks.add(uavTask);
     uavTask.add_done_callback(backgroundtasks.discard);
 
+    ugvConnections = [];
     ugvs = [];
 
     ugvInCritRad = None;
     ugvStopQueue = [];
 
+    numberOfActiveUGVs = 0;
+    pathScheduler = None;
+    pathPlan = None;
+
     for i in range(NUMBER_OF_UGVS):
-        ugvs.append(UGV(LOCAL_IP, UGV_BASE_LOCALS_PORT + i, mainQueue));
-        ugvTask = asyncio.create_task(ugvs[i].start_network());
+        ugvConnections.append(UGV(LOCAL_IP, UGV_BASE_LOCALS_PORT + i, mainQueue));
+        ugvTask = asyncio.create_task(ugvConnections[i].start_network());
         backgroundtasks.add(ugvTask);
         ugvTask.add_done_callback(backgroundtasks.discard);
 
@@ -64,6 +70,7 @@ async def main():
             case 'webapp':
                 match(message["data"]["type"]):
                     case 'scout':
+                        numberOfActiveUGVs = message["data"]["data"];
                         print("Scouting");
                         # await uav.send('takeoff');
                         # await uav.send('forward 70');
@@ -73,10 +80,11 @@ async def main():
                         [shape, imgWidthCm, imgHeightCm] = run_cv(cv2.flip(img,0));
                         pathPlan = PathPlanning();
                         pathPlan.planPath(shape, 20, 3, 5);
-                        pathScheduler = PathScheduler(NUMBER_OF_UGVS, pathPlan.paths);
-                        for ugvIndex,ugv in enumerate(ugvs):
+                        pathScheduler = PathScheduler(numberOfActiveUGVs, pathPlan.paths);
+                        for ugv in ugvs:
+                            if(ugv.id >= numberOfActiveUGVs): continue;
                             ugv.setCritRad(pathPlan.crit_rad);
-                            ugv.setPaths(pathScheduler.assignedPathIndexes[ugvIndex])
+                            ugv.setPaths(pathScheduler.assignedPathIndexes[ugv.id])
                         paths = [];
                         for path in pathPlan.paths:
                             paths.append(path.points.tolist());
@@ -111,6 +119,14 @@ async def main():
                             if(ugv.id == message["data"]["data"]):
                                 await ugv.sendNewPath(pathPlan.paths);
                                 break;
+                    case 'takeUgv':
+                        if(len(ugvStopQueue) == 0):
+                            ugvInCritRad = None;
+                        else:
+                            ugvId = ugvStopQueue.pop(0);
+                            print(f'ugv {ugvId} entering crit rad')
+                            ugvInCritRad = ugvId;
+                            await ugvs[ugvId].go();
                     case 'reconnectUav':
                         print ('reconnectUav');
                         uav = UAV(UAV_LOCAL_IP, UAV_LOCAL_PORT, mainQueue);
@@ -136,6 +152,14 @@ async def main():
                             }
                         }; 
                         await webapp.putMessageInQueue(json.dumps(message));
+                        if(not len(ugvs) == message["data"]["id"]): print("MISMATCH in UGV INDEX");
+                        for ugv in ugvConnections:
+                            if (ugv.id == message["data"]["id"]):
+                                ugvs.append(ugv);
+                                if(not pathScheduler == None):
+                                    ugvs[ugv.id].setCritRad(pathPlan.crit_rad);
+                                    ugvs[ugv.id].setPaths(pathScheduler.assignedPathIndexes[ugv.id])
+                                break;
                     case 'state':
                         message = {
                             'type': 'ugvState',
@@ -161,10 +185,7 @@ async def main():
                         else:
                             print(f'stop ugv {message["data"]["id"]}')
                             ugvStopQueue.append(message["data"]["id"]);
-                            for ugv in ugvs:
-                                if(ugv.id == message["data"]["id"]):
-                                    await ugv.stop();
-                                    break;
+                            await ugvs[message["data"]["id"]].stop();
                     case 'leaveCritRad':
                         print(f'ugv {ugvInCritRad} leaving crit rad')
                         if(len(ugvStopQueue) == 0):
@@ -173,10 +194,7 @@ async def main():
                             ugvId = ugvStopQueue.pop(0);
                             print(f'ugv {ugvId} entering crit rad')
                             ugvInCritRad = ugvId;
-                            for ugv in ugvs:
-                                if(ugv.id == ugvId):
-                                    await ugv.go();
-                                    break;
+                            await ugvs[ugvId].go();
                     case 'placeBoom':
                         message = {
                             "type": "ugvPlaceBoom",

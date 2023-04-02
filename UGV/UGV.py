@@ -16,6 +16,7 @@ class UGV:
     crit_rad = 0;
     inCritRad = True;
     isDiag = False;
+    id = -1;
     def __init__(self, local_ip, local_port, mainQueue: asyncio.Queue):
         """
         Binds to the local IP/port to the UGV.
@@ -36,8 +37,8 @@ class UGV:
 
     def getNodeState(self):
         state = self.stateHistory[-1].convertToDict();
-        if (state["State"] == State.NODE_IDLE and len(self.pathIndexes) == 0):
-            state["State"] = State.NODE_DONE;
+        if (state["State"] == State.NODE_IDLE.name and len(self.pathIndexes) == 0):
+            state["State"] = State.NODE_DONE.name;
         return state;
 
     async def start_network(self):
@@ -50,6 +51,7 @@ class UGV:
             print("SOMETHING IS ALREADY CONNECTED");
             return;
         self.id = len(host_ports);
+        print('ugv', self.id)
         host_ports.append((self.id, self.local_address["local_port"]));
         await self.mainQueue.put({
             "source": "ugv",
@@ -100,8 +102,7 @@ class UGV:
                         }
                     }
                     await self.mainQueue.put(message);
-                elif(self.stateHistory[-2].State == State.NODE_PATH_RETURN.name and self.nodeManager.state.State == State.NODE_IDLE.name):
-                    print('finished path');
+                elif(self.stateHistory[-2].State == State.NODE_PATH_RETURN.name and (self.nodeManager.state.State == State.NODE_IDLE.name or self.nodeManager.state.State == State.NODE_DONE.name)):
                     message = {
                         "source": "ugv",
                         "data": {
@@ -160,6 +161,7 @@ class UGV:
 
     async def sendNewPath(self, paths):
         self.isDiag = False;
+        if(len(self.pathIndexes) == 0): return;
         self.currentPathIndex = self.pathIndexes.pop(0);
         pathPoints = paths[self.currentPathIndex].points;
         for point in pathPoints:
@@ -182,6 +184,7 @@ class UGV:
     async def getState(self):
         while (1):
             # if (len(self.pathIndexes) == 0): continue;
+            if(len(self.stateHistory) > 0 and self.stateHistory[-1].State == State.NODE_IDLE and len(self.pathIndexes) == 0): break;
             await self.nodeManager.send_packet_queue.put(b'1');
             await asyncio.sleep(1);
 
