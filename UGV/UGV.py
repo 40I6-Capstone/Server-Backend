@@ -3,11 +3,13 @@ import asyncio;
 import struct
 import numpy as np;
 import math;
+import random;
 
 from UGV.NodeManager import NodeManager
 from UGV.Packet import State
 
 host_ports = [];
+ugvOnSet=[];
 ugvInCritRad = None;
 
 
@@ -16,6 +18,7 @@ class UGV:
     crit_rad = 0;
     inCritRad = True;
     isDiag = False;
+
     id = -1;
     def __init__(self, local_ip, local_port, mainQueue: asyncio.Queue):
         """
@@ -51,6 +54,7 @@ class UGV:
             print("SOMETHING IS ALREADY CONNECTED");
             return;
         self.id = len(host_ports);
+        ugvOnSet.append(-1);
         print('ugv', self.id)
         host_ports.append((self.id, self.local_address["local_port"]));
         await self.mainQueue.put({
@@ -161,9 +165,32 @@ class UGV:
 
     async def sendNewPath(self, paths):
         self.isDiag = False;
+        print(self.id,self.pathIndexes);
         if(len(self.pathIndexes) == 0): return;
-        self.currentPathIndex = self.pathIndexes.pop(0);
+        ugvOnSet[self.id] = -1;
+        if(self.currentPathIndex == None or self.id % 2):
+            i=0
+            while(paths[self.pathIndexes[i]].set in ugvOnSet):
+                i+=1;
+                if(i == len(self.pathIndexes)):
+                    print("no paths available to take rn");
+                    break;
+        else:
+            i=-1
+            while(paths[self.pathIndexes[i]].set in ugvOnSet):
+                i-=1
+                if(-i > len(self.pathIndexes)):
+                    print("no paths available to take rn");
+                    break;
+        self.currentPathIndex = self.pathIndexes[i];
+        self.pathIndexes.remove(self.currentPathIndex);
+        ugvOnSet[self.id] = paths[self.currentPathIndex].set;
+        # self.currentPathIndex = self.pathIndexes.pop(0);
         pathPoints = paths[self.currentPathIndex].points;
+
+        #TODO REMOVE!!!!
+        await self.nodeManager.send_packet_queue.put(struct.pack("cdd", b'2', 0.0, 0.0));
+
         for point in pathPoints:
             await self.nodeManager.send_packet_queue.put(struct.pack("cdd", b'2', point[0], point[1]));
         await self.go();
@@ -177,15 +204,25 @@ class UGV:
         for point in path:
             await self.nodeManager.send_packet_queue.put(struct.pack("cdd", b'2', point[0], point[1]));
         await self.go();
+        asyncio.create_task(self.getDiagState());
         if(not self.startStatePoll):
             self.startStatePoll = True;
             asyncio.create_task(self.getState());
     
+    def stopDiagPath(self):
+        self.isDiag = False;
+    
     async def getState(self):
         while (1):
             # if (len(self.pathIndexes) == 0): continue;
-            if(len(self.stateHistory) > 0 and self.stateHistory[-1].State == State.NODE_IDLE and len(self.pathIndexes) == 0): break;
+            if(not self.isDiag and len(self.stateHistory) > 0 and self.stateHistory[-1].State == State.NODE_IDLE and len(self.pathIndexes) == 0): break;
             await self.nodeManager.send_packet_queue.put(b'1');
+            await asyncio.sleep(1);
+    
+    async def getDiagState(self):
+        while (1):
+            if(not self.isDiag): break;
+            await self.nodeManager.send_packet_queue.put(b'5');
             await asyncio.sleep(1);
 
     async def stop(self):

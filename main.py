@@ -79,7 +79,7 @@ async def main():
                         img = cv2.imread("./OpenCV/Images/testImg.jpg");
                         [shape, imgWidthCm, imgHeightCm] = run_cv(cv2.flip(img,0));
                         pathPlan = PathPlanning();
-                        pathPlan.planPath(shape, 20, 3, 5);
+                        pathPlan.planPath(shape, 9, 5, numberOfActiveUGVs);
                         pathScheduler = PathScheduler(numberOfActiveUGVs, pathPlan.paths);
                         for ugv in ugvs:
                             if(ugv.id >= numberOfActiveUGVs): continue;
@@ -136,6 +136,11 @@ async def main():
                         for ugv in ugvs:
                             if(ugv.id == message["data"]["data"]["id"]):
                                 await ugv.sendDefinedPath(message["data"]["data"]["path"]);
+                                break;
+                    case 'stopSingle':
+                        for ugv in ugvs:
+                            if(ugv.id == message["data"]["data"]):
+                                ugv.stopDiagPath();
                                 break;
 
                         
