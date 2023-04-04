@@ -16,3 +16,6 @@ For Path Planning
 For OpenCV
 uninstall any other versions of OpenCV
 `pip install opencv-contrib-python==4.6.0.66`
+
+Running server
+`python main.py`

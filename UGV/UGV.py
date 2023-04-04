@@ -209,8 +209,9 @@ class UGV:
             self.startStatePoll = True;
             asyncio.create_task(self.getState());
     
-    def stopDiagPath(self):
+    async def stopDiagPath(self):
         self.isDiag = False;
+        await self.stop(self);
     
     async def getState(self):
         while (1):
