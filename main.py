@@ -9,6 +9,7 @@ import asyncio;
 import cv2;
 import json;
 import base64;
+import time;
 
 UAV_LOCAL_IP = "192.168.10.2";
 UAV_LOCAL_PORT = 8890;
@@ -53,8 +54,10 @@ async def main():
     pathScheduler = None;
     pathPlan = None;
 
+    timeStart = time.time_ns()*1000000;
+
     for i in range(NUMBER_OF_UGVS):
-        ugvConnections.append(UGV(LOCAL_IP, UGV_BASE_LOCALS_PORT + i, mainQueue));
+        ugvConnections.append(UGV(LOCAL_IP, UGV_BASE_LOCALS_PORT + i, timeStart, mainQueue));
         ugvTask = asyncio.create_task(ugvConnections[i].start_network());
         backgroundtasks.add(ugvTask);
         ugvTask.add_done_callback(backgroundtasks.discard);

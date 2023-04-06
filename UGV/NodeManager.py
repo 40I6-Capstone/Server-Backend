@@ -26,17 +26,17 @@ class NodeManager:
         self.state = None;
 
     # create get message function
-    async def getPacket(self, websocket, updateStateSem: asyncio.Semaphore, updateDiagStateSem: asyncio.Semaphore):
+    async def getPacket(self, websocket, updateStateSem: asyncio.Semaphore, updateDiagStateSem: asyncio.Semaphore, timeStart):
         async for message in websocket:
             packet = struct.unpack('c', message[:1]);
             # TODO receive and determine what type of packet has been received between debug and node state then parse the packet and put it in queue for the server
             match (packet[0].decode()):
                 case '5':
-                    diag_packet = Packet.diagnostic_state(message)
+                    diag_packet = Packet.diagnostic_state(message, timeStart)
                     self.diag_state = diag_packet;
                     updateDiagStateSem.release();
                 case '1':
-                    node_state_packet = Packet.node_state(message)
+                    node_state_packet = Packet.node_state(message, timeStart)
                     self.state = node_state_packet;
                     updateStateSem.release();
                 case '6':

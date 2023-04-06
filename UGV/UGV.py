@@ -20,13 +20,15 @@ class UGV:
     isDiag = False;
 
     id = -1;
-    def __init__(self, local_ip, local_port, mainQueue: asyncio.Queue):
+    def __init__(self, local_ip, local_port, timeStart, mainQueue: asyncio.Queue):
         """
         Binds to the local IP/port to the UGV.
         :param host_ip (str): Local IP address to bind.
         :param host_base_port (int): Local port to bind.
         """
         print(f'Port {local_port}');
+        self.timeStart = timeStart;
+        
         self.local_address = {"local_ip": local_ip, "local_port": local_port};
         self.updateStateSem = asyncio.Semaphore();
         self.updateDiagStateSem = asyncio.Semaphore();
@@ -69,7 +71,7 @@ class UGV:
         self.websocket = websocket;
         self.nodeManager = NodeManager(websocket, self.id);
 
-        getPacket_task = asyncio.create_task(self.nodeManager.getPacket(websocket, self.updateStateSem, self.updateDiagStateSem));
+        getPacket_task = asyncio.create_task(self.nodeManager.getPacket(websocket, self.updateStateSem, self.updateDiagStateSem, self.timeStart));
         sendPacket_task = asyncio.create_task(self.nodeManager.sendPacket(websocket));
         updateState_task = asyncio.create_task(self.updateState());
         updateDiagState_task = asyncio.create_task(self.updateDiagState());
