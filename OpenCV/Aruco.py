@@ -54,27 +54,38 @@ def pixel_to_cm_ratio_from_frame(frame: cv2.Mat):
         # Calculate the x and y dimensions of the marker in pixels
         x_dim = abs(marker_corners[0][0] - marker_corners[2][0])
         y_dim = abs(marker_corners[0][1] - marker_corners[2][1])
+
+        # Use pixel mapping measurements to convert pixels to cm
+        px = frame.shape[1]
+        py = frame.shape[0]
+
+        # Aruco marker real size is 10 x 10 cm
+        ximage = px / x_dim * 10
+        yimage = py / y_dim * 10
+
+        # thetaX = 2*math.atan((ximage/2)/distance)
+        # thetaY = 2*math.atan((yimage/2)/distance)
+
+        rx = px / ximage  # pixels per cm
+        ry = py / yimage  # pixels per cm
+        r = (rx + ry) / 2
+
+        # Compute the center of the marker by taking the average of the corner coordinates
+        center = np.mean(marker_corners, axis=0)
+
+        # Use pixel mapping to transform center coordinate:
+        center[0] = center[0] / r  # Transform x coordinate
+        center[1] = (frame.shape[0]-center[1]) / r  # Transform y coordinate
+        offset = -center
+
     else:
         print('Error finding aruco marker');
         return;
-    # Use pixel mapping measurements to convert pixels to cm
-    px = frame.shape[1]
-    py = frame.shape[0]
-
-    # Aruco marker real size is 10 x 10 cm
-    ximage = px / x_dim * 10
-    yimage = py / y_dim * 10
-
-    # thetaX = 2*math.atan((ximage/2)/distance)
-    # thetaY = 2*math.atan((yimage/2)/distance)
-
-    rx = px / ximage  # pixels per cm
-    ry = py / yimage  # pixels per cm
-    return (rx + ry) / 2;
+    return [r, offset]
 
 
 
-async def Aruco(uav:UAV):
+async def ArucoScout(uav:UAV):
     while True:
         # Capture a frame from the video stream
         # ret, frame = cap.read()
@@ -104,7 +115,7 @@ async def Aruco(uav:UAV):
                     r = pixel_to_cm_ratio(x_dim, y_dim)
 
 
-                # currently, top-left of the image is 0,0
+                    # currently, top-left of the image is 0,0
 
                 # Compute the center of the marker by taking the average of the corner coordinates
                 center = np.mean(marker_corners, axis=0)
@@ -112,6 +123,8 @@ async def Aruco(uav:UAV):
                 # Use pixel mapping to transform center coordinate:
                 center[0] = center[0] * r  # Transform x coordinate
                 center[1] = center[1] * r  # Transform y coordinate
+
+
 
                 # Get the current time
                 current_time = time.time() - start_time

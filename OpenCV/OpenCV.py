@@ -113,7 +113,7 @@ def pixel_to_cm_ratio(distance):
     return (rx+ry)/(2);
 
 
-def run_cv(frame: cv2.Mat):
+def run_cv(frame: cv2.Mat, r, offset):
     if debug:
         cv2.namedWindow("Trackbars", cv2.WINDOW_NORMAL)
 
@@ -134,7 +134,6 @@ def run_cv(frame: cv2.Mat):
     frame_high_contrast = apply_brightness_contrast(frame, 0, 20)
     hsv = cv2.cvtColor(frame_high_contrast, cv2.COLOR_BGR2HSV)
 
-    r = Aruco.pixel_to_cm_ratio_from_frame(cv2.flip(frame,0));
     # min = [0,0,0]
     # max = [180,255,255]
 
@@ -253,10 +252,10 @@ def run_cv(frame: cv2.Mat):
         cv2.imshow('Edge', edge)
         # canvas[60:60+mask.shape[0],200:200 + mask.shape[1]] = mask
     # cv2.waitKey(10000)
-
     cv2.destroyAllWindows()
     circle_coords_cm = np.array(circle_coords) / r;
-    return [Shape(circle_coords_cm), frame.shape[1]/r, frame.shape[0]/r];
+    circle_coords_cm = circle_coords_cm + offset;
+    return Shape(circle_coords_cm);
 
     # # wait for a key to pressed, if not then close
     # key = cv2.waitKey(1)

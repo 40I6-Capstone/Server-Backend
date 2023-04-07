@@ -3,6 +3,7 @@ from UGV.UGV import UGV;
 from UGV.Packet import State;
 from Webapp.Webapp import Webapp;
 from OpenCV.OpenCV import run_cv;
+import OpenCV.Aruco as Aruco;
 from PathPlanning.PathPlanning import PathPlanning;
 from PathPlanning.PathScheduler import PathScheduler;
 import asyncio;
@@ -56,6 +57,9 @@ async def main():
 
     timeStart = time.time_ns()*1000000;
 
+    pixel_ratio = 0;
+    image_offset = 0;
+
     for i in range(NUMBER_OF_UGVS):
         ugvConnections.append(UGV(LOCAL_IP, UGV_BASE_LOCALS_PORT + i, timeStart, mainQueue));
         ugvTask = asyncio.create_task(ugvConnections[i].start_network());
@@ -80,7 +84,8 @@ async def main():
                         # await uav.send('up 70');
                         # img = uav.capture_photo();
                         img = cv2.imread("./OpenCV/Images/testImg.jpg");
-                        [shape, imgWidthCm, imgHeightCm] = run_cv(cv2.flip(img,0));
+                        [pixel_ratio, image_offset] = Aruco.pixel_to_cm_ratio_from_frame(img);
+                        shape = run_cv(cv2.flip(img,0), pixel_ratio, image_offset);
                         pathPlan = PathPlanning();
                         pathPlan.planPath(shape, 9, 5, numberOfActiveUGVs);
                         pathScheduler = PathScheduler(numberOfActiveUGVs, pathPlan.paths);
@@ -101,7 +106,16 @@ async def main():
                             }
                         };
                         await webapp.putMessageInQueue(json.dumps(message));
-
+                        # message = {
+                        #     "type": "scout",
+                        #     "data": {
+                        #         "paths": [[1,2]],
+                        #         "vertices": shape.vertices.tolist(),
+                        #         "midpoints": shape.midpoints.tolist(),
+                        #         "contour": [],#shape.contour.tolist(),
+                        #     }
+                        # };
+                        # await webapp.putMessageInQueue(json.dumps(message));
                         encoded_img = encode_img(img, 'jpg')
                         b64_src = 'data:image/jpeg;base64,'
                         img_src = b64_src + encoded_img
@@ -109,12 +123,11 @@ async def main():
                             "type": "imageUpdate",
                             "data": {
                                 "src": img_src,
-                                "dim": [imgWidthCm, imgHeightCm],
-                                "off": [0,0],
+                                "dim": [img.shape[1]/pixel_ratio, img.shape[0]/pixel_ratio],
+                                "off": (image_offset).tolist(),
                             }
                         };
                         await webapp.putMessageInQueue(json.dumps(message));
-                        # await uav.send('land');
                         
                     case 'giveUgvPath':
                         print(f'give ugv {message["data"]["data"]} a path');
