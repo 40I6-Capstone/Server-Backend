@@ -61,7 +61,7 @@ async def main():
     image_offset = 0;
 
     for i in range(NUMBER_OF_UGVS):
-        ugvConnections.append(UGV(LOCAL_IP, UGV_BASE_LOCALS_PORT + i, timeStart, mainQueue));
+        ugvConnections.append(UGV(LOCAL_IP, UGV_BASE_LOCALS_PORT, i, timeStart, mainQueue));
         ugvTask = asyncio.create_task(ugvConnections[i].start_network());
         backgroundtasks.add(ugvTask);
         ugvTask.add_done_callback(backgroundtasks.discard);
@@ -106,16 +106,7 @@ async def main():
                             }
                         };
                         await webapp.putMessageInQueue(json.dumps(message));
-                        # message = {
-                        #     "type": "scout",
-                        #     "data": {
-                        #         "paths": [[1,2]],
-                        #         "vertices": shape.vertices.tolist(),
-                        #         "midpoints": shape.midpoints.tolist(),
-                        #         "contour": [],#shape.contour.tolist(),
-                        #     }
-                        # };
-                        # await webapp.putMessageInQueue(json.dumps(message));
+                        
                         encoded_img = encode_img(img, 'jpg')
                         b64_src = 'data:image/jpeg;base64,'
                         img_src = b64_src + encoded_img
@@ -217,6 +208,10 @@ async def main():
                             ugvInCritRad = ugvId;
                             await ugvs[ugvId].go();
                     case 'placeBoom':
+                        ugv = ugvs[message["data"]["id"]];
+                        img = uav.capture_photo()
+                        posData = Aruco.getNodePosition(img, ugv.arucoId, pixel_ratio, image_offset);
+                        asyncio.create_task(ugvs.handleBoomPlacement(posData));
                         message = {
                             "type": "ugvPlaceBoom",
                             "data": {
@@ -226,6 +221,10 @@ async def main():
                         }
                         await webapp.putMessageInQueue(json.dumps(message));
                     case 'finishPath':
+                        ugv = ugvs[message["data"]["id"]];
+                        img = uav.capture_photo()
+                        posData = Aruco.getNodePosition(img, ugv.arucoId, pixel_ratio, image_offset);
+                        await ugv.sendAbsolutePos(posData);
                         print('send finish path');
                         message = {
                             "type": "ugvDonePath",

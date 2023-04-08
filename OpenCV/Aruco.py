@@ -46,42 +46,74 @@ def pixel_to_cm_ratio_from_frame(frame: cv2.Mat):
 
     # If any markers are detected, draw the markers and their IDs on the frame
     if ids is not None:
-        cv2.aruco.drawDetectedMarkers(frame, corners, ids)
+        # cv2.aruco.drawDetectedMarkers(frame, corners, ids)
 
         # Get the corner coordinates of the marker
         marker_corners = corners[0][0]
 
-        # Calculate the x and y dimensions of the marker in pixels
-        x_dim = abs(marker_corners[0][0] - marker_corners[2][0])
-        y_dim = abs(marker_corners[0][1] - marker_corners[2][1])
+        dim = np.linalg.norm(marker_corners[0] - marker_corners[1])
+        dim += np.linalg.norm(marker_corners[1] - marker_corners[2])
+        dim += np.linalg.norm(marker_corners[2] - marker_corners[3])
+        dim += np.linalg.norm(marker_corners[3] - marker_corners[0])
+        dim /= 4
 
-        # Use pixel mapping measurements to convert pixels to cm
-        px = frame.shape[1]
-        py = frame.shape[0]
-
-        # Aruco marker real size is 10 x 10 cm
-        ximage = px / x_dim * 10
-        yimage = py / y_dim * 10
-
-        # thetaX = 2*math.atan((ximage/2)/distance)
-        # thetaY = 2*math.atan((yimage/2)/distance)
-
-        rx = px / ximage  # pixels per cm
-        ry = py / yimage  # pixels per cm
-        r = (rx + ry) / 2
+        r = dim / 10
 
         # Compute the center of the marker by taking the average of the corner coordinates
+        marker_corners = np.add(np.array([0, frame.shape[0]]), np.multiply(marker_corners, np.array([1, -1])))
         center = np.mean(marker_corners, axis=0)
 
         # Use pixel mapping to transform center coordinate:
-        center[0] = center[0] / r  # Transform x coordinate
-        center[1] = (frame.shape[0]-center[1]) / r  # Transform y coordinate
+        center  /= r  # Transform center
         offset = -center
 
     else:
         print('Error finding aruco marker');
         return;
     return [r, offset]
+
+def getNodePosition(frame: cv2.Mat, arucoId, r, offset):
+
+    # Convert the frame to grayscale
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    # Detect the ArUco markers in the frame
+    corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray, aruco_dict, parameters=aruco_params)
+
+    # If any markers are detected, draw the markers and their IDs on the frame
+    if ids is not None:
+        index = np.where(ids == arucoId);
+        if(len(index)==0):
+            print(f'Error finding aruco marker with index {arucoId}');
+            return;
+        i = index[0];
+
+        # Get the corner coordinates of the marker
+        marker_corners = corners[i][0]
+
+        # Compute the center of the marker by taking the average of the corner coordinates
+        marker_corners = np.add(np.array([0, frame.shape[0]]), np.multiply(marker_corners, np.array([1, -1])))
+        center = np.mean(marker_corners, axis=0)
+
+        # Use pixel mapping to transform center coordinate:
+        center  /= r  # Transform center
+        center += offset
+
+        diff = marker_corners[0]-marker_corners[3]
+        angle_1 = np.arctan2(diff[1], diff[0]);
+        diff = marker_corners[1]-marker_corners[2]
+        angle_2 = np.arctan2(diff[1], diff[0]);
+        heading = (angle_1+angle_2)*90/np.pi # get average between 2 angles and convert to degrees at the same time
+
+        return {
+            "x": center[0],
+            "y": center[1],
+            "head": heading
+        }
+
+    else:
+        print('Error finding aruco marker');
+        return;
 
 
 

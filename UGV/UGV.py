@@ -18,18 +18,21 @@ class UGV:
     crit_rad = 0;
     inCritRad = True;
     isDiag = False;
+    done = False;
+
 
     id = -1;
-    def __init__(self, local_ip, local_port, timeStart, mainQueue: asyncio.Queue):
+    def __init__(self, local_ip, local_port_base, index, timeStart, mainQueue: asyncio.Queue):
         """
         Binds to the local IP/port to the UGV.
         :param host_ip (str): Local IP address to bind.
         :param host_base_port (int): Local port to bind.
         """
-        print(f'Port {local_port}');
+        print(f'Port {local_port_base + index}');
         self.timeStart = timeStart;
-        
-        self.local_address = {"local_ip": local_ip, "local_port": local_port};
+
+        self.local_address = {"local_ip": local_ip, "local_port": local_port_base + index};
+        self.arucoId = index
         self.updateStateSem = asyncio.Semaphore();
         self.updateDiagStateSem = asyncio.Semaphore();
         self.websocket = None;
@@ -42,7 +45,10 @@ class UGV:
 
     def getNodeState(self):
         state = self.stateHistory[-1].convertToDict();
-        if (state["State"] == State.NODE_IDLE.name and len(self.pathIndexes) == 0):
+        if (self.done):
+            state["State"] = State.NODE_DONE.name;
+        elif(len(self.pathIndexes) == 0 and state["State"] == State.NODE_IDLE.name and self.stateHistory[-2].State == State.NODE_PATH_RETURN):
+            self.done = True;
             state["State"] = State.NODE_DONE.name;
         return state;
 
@@ -79,6 +85,7 @@ class UGV:
             [getPacket_task, sendPacket_task, updateState_task, updateDiagState_task],
             return_when=asyncio.FIRST_COMPLETED,
         );
+        self.websocket = None;
         for task in pending:
             task.cancel();
 
@@ -98,7 +105,7 @@ class UGV:
             await self.mainQueue.put(message);
             if(self.isDiag): continue;
             if(len(self.stateHistory) > 1) :
-                if(self.stateHistory[-2].State == State.NODE_PATH_LEAVE.name and self.nodeManager.state.State == State.NODE_PATH_RETURN.name):
+                if(self.stateHistory[-2].State == State.NODE_PATH_LEAVE.name and self.nodeManager.state.State == State.NODE_IDLE.name):
                     message = {
                         "source": "ugv",
                         "data": {
@@ -214,13 +221,18 @@ class UGV:
     async def stopDiagPath(self):
         self.isDiag = False;
         await self.stop(self);
-    
+      
     async def getState(self):
         while (1):
             # if (len(self.pathIndexes) == 0): continue;
             if(not self.isDiag and len(self.stateHistory) > 0 and self.stateHistory[-1].State == State.NODE_IDLE and len(self.pathIndexes) == 0): break;
             await self.nodeManager.send_packet_queue.put(b'1');
             await asyncio.sleep(1);
+    
+    async def handleBoomPlacement(self, data):
+        await self.sendAbsolutePos(data);
+        await asyncio.sleep(1);
+        await self.go();
     
     async def getDiagState(self):
         while (1):
@@ -233,3 +245,7 @@ class UGV:
 
     async def go(self):
         await self.nodeManager.send_packet_queue.put(b'4')
+
+    async def sendAbsolutePos(self, data):
+        await self.nodeManager.send_packet_queue.put(struct.pack("cddd", b'6', data["x"], data["y"], data["head"]));
+
