@@ -78,12 +78,11 @@ async def main():
                 match(message["data"]["type"]):
                     case 'scout':
                         numberOfActiveUGVs = message["data"]["data"];
-                        print("Scouting");
                         # await uav.send('takeoff');
                         # await uav.send('forward 70');
                         # await uav.send('up 70');
-                        # img = uav.capture_photo();
-                        img = cv2.imread("./OpenCV/Images/testImg.jpg");
+                        img = uav.capture_photo();
+                        # img = cv2.imread("./OpenCV/Images/testImg.jpg");
                         [pixel_ratio, image_offset] = Aruco.pixel_to_cm_ratio_from_frame(img);
                         shape = run_cv(cv2.flip(img,0), pixel_ratio, image_offset);
                         pathPlan = PathPlanning();
@@ -164,10 +163,13 @@ async def main():
                             }
                         }; 
                         await webapp.putMessageInQueue(json.dumps(message));
-                        if(not len(ugvs) == message["data"]["id"]): print("MISMATCH in UGV INDEX");
+                        if(len(ugvs) <  message["data"]["id"]): print("mismatch in connections");
                         for ugv in ugvConnections:
                             if (ugv.id == message["data"]["id"]):
-                                ugvs.append(ugv);
+                                if(len(ugvs) > message["data"]["id"]):
+                                    ugvs[ugv.id] = ugv;
+                                else:
+                                    ugvs.append(ugv);
                                 if(not pathScheduler == None):
                                     ugvs[ugv.id].setCritRad(pathPlan.crit_rad);
                                     ugvs[ugv.id].setPaths(pathScheduler.assignedPathIndexes[ugv.id])
@@ -208,10 +210,13 @@ async def main():
                             ugvInCritRad = ugvId;
                             await ugvs[ugvId].go();
                     case 'placeBoom':
-                        ugv = ugvs[message["data"]["id"]];
+                        ugv = ugvs[message["data"]["ugvId"]];
                         img = uav.capture_photo()
                         posData = Aruco.getNodePosition(img, ugv.arucoId, pixel_ratio, image_offset);
-                        asyncio.create_task(ugvs.handleBoomPlacement(posData));
+                        if(posData == None):
+                            await ugv.go();
+                            continue;
+                        asyncio.create_task(ugv.handleBoomPlacement(posData));
                         message = {
                             "type": "ugvPlaceBoom",
                             "data": {
@@ -221,7 +226,7 @@ async def main():
                         }
                         await webapp.putMessageInQueue(json.dumps(message));
                     case 'finishPath':
-                        ugv = ugvs[message["data"]["id"]];
+                        ugv = ugvs[message["data"]["ugvId"]];
                         img = uav.capture_photo()
                         posData = Aruco.getNodePosition(img, ugv.arucoId, pixel_ratio, image_offset);
                         await ugv.sendAbsolutePos(posData);

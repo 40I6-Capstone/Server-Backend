@@ -82,11 +82,14 @@ def getNodePosition(frame: cv2.Mat, arucoId, r, offset):
 
     # If any markers are detected, draw the markers and their IDs on the frame
     if ids is not None:
+        print('ids', ids);
         index = np.where(ids == arucoId);
-        if(len(index)==0):
+        print('index', index);
+        if(len(index)==0 or len(index[0])==0):
             print(f'Error finding aruco marker with index {arucoId}');
             return;
-        i = index[0];
+        i = index[0][0];
+        print('i', i);
 
         # Get the corner coordinates of the marker
         marker_corners = corners[i][0]

@@ -102,7 +102,11 @@ class PathPlanning:
             polygon = Polygon(shape.vertices);
             line = LineString(path2[:-7]);
             while(polygon.dwithin(line, ugv_rad)):
-                ctl_ext = self._get_ext_coef(ugv_rad, ctl_ext, "rad");
+                if(polygon.crosses(line)):
+                    ctl_ext = self._get_ext_coef(ugv_rad, ctl_ext, "rad");
+                else:
+                    ctl_ext = self._get_ext_coef(ugv_rad, ctl_ext, "spoke");
+
                 cr_x_ext = (self.crit_rad + ctl_ext[0])*math.cos((base_angle+angle_off));
                 cr_y_ext = (self.crit_rad + ctl_ext[0])*math.sin((base_angle+angle_off));
                 cv[1] = np.array([cr_x_ext,cr_y_ext]);
@@ -153,6 +157,8 @@ class PathPlanning:
                     path = Path(np.array(path1+path2+path3), curr_set)
                     self.paths[-1] = path;
             paths_by_set[curr_set].append(path);
+            # if(i == num_of_paths-4):
+            #     np.savetxt('path.csv', path.points, delimiter=',')
         self.paths.sort(key= (lambda path: path.length), reverse=True)
       
       
@@ -160,14 +166,14 @@ class PathPlanning:
     # function to get how much the control points should extend by from the anchor points
     def _get_ext_coef(self, ugv_rad, ctl_ext=[], side=None):
             if(len(ctl_ext) == 0):
-                ctl_rad_ext =  ugv_rad;
+                ctl_rad_ext =  ugv_rad/2;
                 ctl_spoke_ext = ugv_rad;
             else:
                 [ctl_rad_ext, ctl_spoke_ext] = ctl_ext;
                 if(side == "rad"):
-                    ctl_rad_ext = ctl_ext[0] + ugv_rad;
+                    ctl_rad_ext = ctl_ext[0] + ugv_rad/2;
                 elif(side == "spoke"):
-                    ctl_spoke_ext = ctl_ext[1] + ugv_rad;
+                    ctl_spoke_ext = ctl_ext[1] + ugv_rad/2;
             return np.array([ctl_rad_ext, ctl_spoke_ext]);
 
     def _b_spline(self, cv):

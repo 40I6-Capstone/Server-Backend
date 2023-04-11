@@ -62,8 +62,11 @@ class UGV:
             print("SOMETHING IS ALREADY CONNECTED");
             return;
         self.id = len(host_ports);
-        ugvOnSet.append(-1);
-        print('ugv', self.id)
+        if(len(ugvOnSet) > self.id):
+            ugvOnSet[self.id] = -1
+        else:
+            ugvOnSet.append(-1);
+        print('ugv', self.id, self.arucoId)
         host_ports.append((self.id, self.local_address["local_port"]));
         await self.mainQueue.put({
             "source": "ugv",
@@ -86,6 +89,8 @@ class UGV:
             return_when=asyncio.FIRST_COMPLETED,
         );
         self.websocket = None;
+        host_ports.remove(host_ports[self.id]); 
+        print("ugv", self.id, "disconnected");
         for task in pending:
             task.cancel();
 
@@ -231,12 +236,12 @@ class UGV:
     
     async def handleBoomPlacement(self, data):
         await self.sendAbsolutePos(data);
-        await asyncio.sleep(1);
+        await asyncio.sleep(5);
         await self.go();
     
     async def getDiagState(self):
         while (1):
-            if(not self.isDiag): break;
+            if(not self.isDiag): continue;
             await self.nodeManager.send_packet_queue.put(b'5');
             await asyncio.sleep(1);
 

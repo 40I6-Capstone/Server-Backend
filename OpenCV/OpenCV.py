@@ -199,7 +199,7 @@ def run_cv(frame: cv2.Mat, r, offset):
 
         # add a buffer to the bounding circle
         buffer = 1.20
-        radius = radius * buffer
+        radius = radius * buffer + 5
 
         color = orange
         thickness = 15
@@ -251,7 +251,7 @@ def run_cv(frame: cv2.Mat, r, offset):
         cv2.imshow("mask_result", result)
         cv2.imshow('Edge', edge)
         # canvas[60:60+mask.shape[0],200:200 + mask.shape[1]] = mask
-    # cv2.waitKey(10000)
+    cv2.waitKey(10000)
     cv2.destroyAllWindows()
     circle_coords_cm = np.array(circle_coords) / r;
     circle_coords_cm = circle_coords_cm + offset;
